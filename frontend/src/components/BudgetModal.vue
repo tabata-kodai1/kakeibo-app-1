@@ -68,10 +68,12 @@ function save() {
         <span v-if="serverMessage" class="field-error" role="alert">{{ serverMessage }}</span>
         <div class="field">
           <label for="budget-amount">予算額<span class="required">必須</span></label>
+          <!-- showModal() は既定で先頭の「×」にフォーカスするため、autofocus で入力欄に置く（N-21） -->
           <input
             id="budget-amount"
             :value="amount"
             type="number"
+            autofocus
             :class="{ invalid: error }"
             @input="onInput"
           />
