@@ -10,6 +10,10 @@ Rails.application.routes.draw do
   get "api/health" => "health#show"
 
   namespace :api, defaults: { format: :json } do
+    # 一括操作。DELETE /entries/bulk が下の resources の destroy（:id = "bulk"）に取られないよう、先に書く
+    patch "entries/bulk", to: "bulk_entries#update"
+    delete "entries/bulk", to: "bulk_entries#destroy"
+
     resources :entries, only: %i[index create destroy]
     # resources の update は PATCH も通してしまう。設計書は PUT のみ（PATCH は一括更新の /entries/bulk 用）
     put "entries/:id", to: "entries#update"
