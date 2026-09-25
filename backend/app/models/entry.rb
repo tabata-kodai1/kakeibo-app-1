@@ -15,6 +15,7 @@ class Entry < ApplicationRecord
   validates :entry_date, presence: { message: "日付を入力してください" }
   validates :category_id, presence: { message: "カテゴリを選択してください" }
   validate :category_must_exist
+  validate :category_type_must_not_change, on: :update
   validates :amount, numericality: {
     only_integer: true, greater_than_or_equal_to: 1, less_than_or_equal_to: AMOUNT_MAX,
     message: "金額は1以上の整数で入力してください"
@@ -28,5 +29,16 @@ class Entry < ApplicationRecord
     return if category_id.blank? || category.present?
 
     errors.add(:category_id, "カテゴリを選択してください")
+  end
+
+  # 支出と収入をまたぐ付け替えは、残額が大きく動くのに「カテゴリを直しただけ」に見えるため認めない（F-06）。
+  # 変更後のカテゴリが存在しないときは、カテゴリ未選択のエラーのほうを返す
+  def category_type_must_not_change
+    return unless category_id_changed? && category.present?
+
+    before = Category.find_by(id: category_id_was)
+    return if before.nil? || before.category_type == category.category_type
+
+    errors.add(:category_id, "支出と収入をまたぐカテゴリ変更はできません")
   end
 end

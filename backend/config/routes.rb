@@ -10,7 +10,9 @@ Rails.application.routes.draw do
   get "api/health" => "health#show"
 
   namespace :api, defaults: { format: :json } do
-    resources :entries, only: :index
+    resources :entries, only: %i[index create destroy]
+    # resources の update は PATCH も通してしまう。設計書は PUT のみ（PATCH は一括更新の /entries/bulk 用）
+    put "entries/:id", to: "entries#update"
     resources :categories, only: :index
     resource :summary, only: :show
     put "budgets/:year_month", to: "budgets#update"

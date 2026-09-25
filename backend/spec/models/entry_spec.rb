@@ -55,6 +55,48 @@ RSpec.describe Entry, type: :model do
     end
   end
 
+  describe "category の収支区分の変更" do
+    let(:expense) { create(:category) }
+    let(:other_expense) { create(:category) }
+    let(:income) { create(:category, :income) }
+
+    it "同じ区分のカテゴリへの変更は有効" do
+      entry = create(:entry, category: expense)
+      entry.category = other_expense
+      expect(entry).to be_valid
+    end
+
+    it "収支区分をまたぐ変更は無効（支出→収入）" do
+      entry = create(:entry, category: expense)
+      entry.category = income
+      expect(entry).not_to be_valid
+      expect(entry.errors[:category_id]).to eq [ "支出と収入をまたぐカテゴリ変更はできません" ]
+    end
+
+    it "収支区分をまたぐ変更は無効（収入→支出）" do
+      entry = create(:entry, category: income)
+      entry.category = expense
+      expect(entry).not_to be_valid
+    end
+
+    it "カテゴリを変えない更新には影響しない" do
+      entry = create(:entry, category: income)
+      entry.amount = 500
+      expect(entry).to be_valid
+    end
+
+    it "新規作成では区分の比較をしない" do
+      expect(build(:entry, category: income)).to be_valid
+    end
+
+    it "存在しないカテゴリは、区分の比較ではなくカテゴリ未選択のエラーになる" do
+      entry = create(:entry, category: expense)
+      entry.category_id = 999_999
+      expect(entry).not_to be_valid
+      expect(entry.errors[:category_id]).to eq [ "カテゴリを選択してください" ]
+    end
+  end
+
   describe "memo" do
     it "未入力（nil）でも有効" do
       expect(build(:entry, memo: nil)).to be_valid
