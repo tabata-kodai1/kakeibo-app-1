@@ -4,6 +4,15 @@ ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?
+# DATABASE_URL は database.yml より優先される。compose の api は開発 DB を渡すため、
+# 何も指定しないと rspec が開発 DB に対して走り、スキーマの再作成で消しかねない
+test_database = ActiveRecord::Base.connection_db_config.database
+unless test_database.to_s.end_with?("_test")
+  abort <<~MESSAGE
+    rspec の接続先が「#{test_database}」です。テスト用の DB（*_test）を指定して実行してください。
+      docker compose exec -e DATABASE_URL=mysql2://root:<パスワード>@db:3306/kakeibo_test api bundle exec rspec
+  MESSAGE
+end
 # Uncomment the line below in case you have `--require rails_helper` in the `.rspec` file
 # that will avoid rails generators crashing because migrations haven't been run yet
 # return unless Rails.env.test?
