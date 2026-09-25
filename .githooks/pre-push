@@ -1,0 +1,21 @@
+#!/bin/sh
+# push の直前に、これから送るコミット（メッセージを含む）を検査する。落ちたら push しない。
+# pre-commit を通らなかった経路（マージ、rebase、--no-verify で作ったコミット）の最後の砦。
+zero=0000000000000000000000000000000000000000
+status=0
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  # ブランチの削除は検査するものがない
+  [ "$local_sha" = "$zero" ] && continue
+  if [ "$remote_sha" = "$zero" ]; then
+    # 新しいブランチ。既定ブランチから先のコミットだけを対象にする
+    base=""
+    for b in origin/main origin/master; do
+      base=$(git merge-base "$local_sha" "$b" 2>/dev/null) && break || base=""
+    done
+    [ -z "$base" ] && base=$(git rev-list --max-parents=0 "$local_sha" | tail -1)
+  else
+    base="$remote_sha"
+  fi
+  bash "$(git rev-parse --show-toplevel)/.githooks/scan.sh" --range "$base..$local_sha" || status=1
+done
+exit $status
