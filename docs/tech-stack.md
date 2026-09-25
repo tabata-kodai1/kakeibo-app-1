@@ -24,7 +24,7 @@ flowchart LR
 | 層 | 技術 | バージョン方針 |
 | --- | --- | --- |
 | バックエンド言語 | Ruby | 3.3 系 |
-| バックエンドFW | Ruby on Rails（APIモード） | 8.x 系 |
+| バックエンドFW | Ruby on Rails（APIモード） | 8.1 系 |
 | DBアクセス | ActiveRecord | Rails 同梱 |
 | DBマイグレーション | ActiveRecord Migration | Rails 同梱 |
 | APIレスポンス整形 | Jbuilder | 最新安定版 |
@@ -36,10 +36,12 @@ flowchart LR
 | ビルドツール | Vite | 最新安定版 |
 | HTTPクライアント | fetch（標準API） | - |
 | ローカル実行 | Docker Compose | - |
-| Lint（Ruby） | RuboCop（+ rubocop-rails / rubocop-rspec） | 最新安定版 |
+| Lint（Ruby） | RuboCop（`rubocop-rails-omakase`） | Rails 同梱 |
+| 静的セキュリティ解析 | Brakeman | Rails 同梱 |
+| 脆弱性チェック（Ruby） | bundler-audit | Rails 同梱 |
 | Lint（フロント） | ESLint + Prettier、型チェックは vue-tsc | 最新安定版 |
-| 脆弱性チェック | bundler-audit（Ruby）、`npm audit`（フロント） | 最新安定版 |
-| CI | GitHub Actions | - |
+| 脆弱性チェック（フロント） | `npm audit` | npm 同梱 |
+| CI | GitHub Actions | Rails 生成のワークフローを拡張 |
 | インフラ | Terraform + AWS（EC2 / RDS / S3） | Terraform 1.x 系 |
 
 ## 選定理由
@@ -56,26 +58,50 @@ Rails を選ぶ実務上の理由:
 
 **APIモード**（`rails new --api`）を選ぶのは、画面を Vue が持つため、ビューまわりの機能を読み込む必要がないから。起動が軽くなり、ミドルウェアの構成も理解しやすい。
 
-#### 生成時に落とすもの
+#### 生成時のオプション
 
-Rails 8 の `rails new` は、既定で Kamal（デプロイ）・Thruster（前段プロキシ）・Solid Queue / Solid Cache / Solid Cable（ジョブ・キャッシュ）・minitest・GitHub Actions のワークフローまで生成する。本構成はそのいずれも使わない（デプロイは [plan.md](./plan.md#フェーズ6-aws) の `deploy.sh`、テストは RSpec、CI は自前で書く）ため、生成の時点で外す。
+`rails new` は、使わない構成要素まで一式生成する。生成の時点で外しておく。
 
 ```
-rails new backend --api --database=postgresql   --skip-test --skip-kamal --skip-solid --skip-thruster --skip-ci
+rails new backend --api --database=postgresql \
+  --skip-test --skip-kamal --skip-solid --skip-thruster \
+  --skip-action-mailer --skip-action-mailbox --skip-action-text \
+  --skip-active-storage --skip-action-cable
 ```
 
 | オプション | 外す理由 |
 | --- | --- |
 | `--skip-test` | minitest を生成しない。テストは RSpec を使う（後述） |
-| `--skip-kamal` / `--skip-thruster` | デプロイは `deploy.sh` による手動手順とする |
-| `--skip-solid` | 非同期ジョブもキャッシュも使わない |
-| `--skip-ci` | CI のワークフローは要件に合わせて自分で書く（後述） |
+| `--skip-kamal` / `--skip-thruster` | デプロイは [plan.md](./plan.md#フェーズ6-aws) の `deploy.sh` による手動手順とする |
+| `--skip-solid` | Solid Queue / Cache / Cable。非同期ジョブもキャッシュも使わない |
+| `--skip-action-mailer` / `--skip-action-mailbox` | メールの送受信をしない |
+| `--skip-action-text` | リッチテキストを扱わない |
+| `--skip-active-storage` | ファイル添付をしない（[requirements.md の対象外](./requirements.md#22-対象外作らないもの)で画像添付を外している）。あわせて `image_processing` gem も入らなくなる |
+| `--skip-action-cable` | WebSocket を使わない |
 
 **Dockerfile は残す。** 本番の EC2 上で Rails をコンテナとして動かすため（[インフラ](#インフラ-terraform--ec2--rds--s3)）。
 
-なお **Jbuilder は Gemfile にコメントアウトされた状態で生成される**ため、明示的に有効化する。使わずに Hash を `render json:` で返すこともできるが、[features.md](./features.md) の月次サマリー（予算・合計・カテゴリ別内訳を 1 レスポンスにまとめる）のような入れ子構造は、テンプレートとして書いたほうが見通しが良い。
+**`--skip-ci` は付けない。** 生成される `.github/workflows/ci.yml` をそのまま土台として使う（後述の [CI](#ci-github-actions)）。
 
-> 上記のオプションは Rails 8 系を前提にしている。フェーズ1 の着手時に `rails new --help` で実在を確認してから確定する。
+#### 生成物からそのまま使うもの
+
+`rails new` は品質まわりのツールを既定で Gemfile に入れる。自分で追加する必要はなく、**そのまま採用する**。
+
+| 同梱されるもの | 使い道 |
+| --- | --- |
+| `rubocop-rails-omakase` | Rails 公式の RuboCop 設定。`.rubocop.yml` も生成される（[N-34](./non-functional.md#開発プロセス品質)） |
+| `brakeman` | Rails 向けの静的セキュリティ解析。`bin/brakeman` が用意される |
+| `bundler-audit` | gem の既知脆弱性の検出。`bin/bundler-audit` が用意される（[N-35](./non-functional.md#開発プロセス品質)） |
+| `.github/workflows/ci.yml` | brakeman / bundler-audit / RuboCop を PR で実行するワークフロー |
+| `.github/dependabot.yml` | 依存更新の PR を自動で作る設定 |
+
+#### 自分で追加するもの
+
+**Jbuilder は API モードの Gemfile に含まれない**（コメントアウトではなく、行そのものが無い）。使うには明示的に追加する。Hash を `render json:` で返すこともできるが、[features.md](./features.md) の月次サマリー（予算・合計・カテゴリ別内訳を 1 レスポンスにまとめる）のような入れ子構造は、テンプレートとして書いたほうが見通しが良い。
+
+このほか `rack-cors`、`rspec-rails`、`factory_bot_rails` を追加する。
+
+> 上記は Rails 8.1.4 / Ruby 3.3 のコンテナで `rails new --help` と実際の生成物を確認した結果にもとづく。
 
 ### DBアクセス: ActiveRecord
 
@@ -181,35 +207,40 @@ const res = await fetch(url, { ...init, signal: AbortSignal.timeout(10_000) })
 - テスト対象は **API のリクエストスペック**とする。HTTP リクエストを投げてレスポンスと DB の状態を検証する形で、F-01〜F-09 の受け入れ条件を端から端まで確認できる
 - フロントエンドは手動確認とする。新しい技術が多いため、テストの範囲を広げるより実装の完走を優先する
 
-### コード品質: RuboCop / ESLint / Prettier / bundler-audit
+### コード品質: RuboCop / Brakeman / ESLint / Prettier
 
-[N-34](./non-functional.md#開発プロセス品質) と [N-35](./non-functional.md#開発プロセス品質) で導入を宣言しているため、技術構成としても明記する。
+[N-34](./non-functional.md#開発プロセス品質) と [N-35](./non-functional.md#開発プロセス品質) に対応する。**Ruby 側は `rails new` の生成物をそのまま使い、追加導入はしない。** フロント側だけ自分で用意する。
 
-| ツール | 対象 | 役割 |
-| --- | --- | --- |
-| RuboCop（+ rubocop-rails / rubocop-rspec） | Ruby | 書式と記法の統一。Rails / RSpec 固有の指摘も拾う |
-| ESLint | TypeScript / Vue | バグになりやすい記述の検出 |
-| Prettier | TypeScript / Vue / CSS | 書式の統一。整形は Prettier、検出は ESLint と役割を分ける |
-| vue-tsc | Vue SFC | `<script setup>` を含めた型チェック（`vue-tsc --noEmit`） |
-| bundler-audit | Gemfile.lock | 既知の脆弱性を持つ gem の検出 |
-| `npm audit` | package-lock.json | 同上（npm 同梱のため追加インストール不要） |
+| ツール | 対象 | 役割 | 入手 |
+| --- | --- | --- | --- |
+| RuboCop（`rubocop-rails-omakase`） | Ruby | 書式と記法の統一 | Rails 同梱 |
+| Brakeman | Ruby | 静的セキュリティ解析 | Rails 同梱 |
+| bundler-audit | Gemfile.lock | 既知の脆弱性を持つ gem の検出 | Rails 同梱 |
+| ESLint | TypeScript / Vue | バグになりやすい記述の検出 | 追加 |
+| Prettier | TypeScript / Vue / CSS | 書式の統一。整形は Prettier、検出は ESLint と役割を分ける | 追加 |
+| vue-tsc | Vue SFC | `<script setup>` を含めた型チェック（`vue-tsc --noEmit`） | 追加 |
+| `npm audit` | package-lock.json | フロント依存の脆弱性検出 | npm 同梱 |
 
-Ruby を初めて書くため、規約を人間が覚える前に RuboCop に指摘させる。設定は原則デフォルトのままとし、実際に不都合が出た規則だけ `.rubocop.yml` で無効化する（最初から大量に除外設定を書かない）。
+Ruby を初めて書くため、規約を人間が覚える前に RuboCop に指摘させる。`rubocop-rails-omakase` は Rails 公式が定めた設定で、**そのまま使う**ことを前提にしている。実際に不都合が出た規則だけ `.rubocop.yml` で上書きする（最初から大量に除外設定を書かない）。
+
+**Brakeman を採用する理由**は、本アプリが認証を持たない（[requirements.md](./requirements.md#22-対象外作らないもの)）ことにある。SQL インジェクションや安全でないリダイレクトを静的に検出できるため、[N-09](./non-functional.md#セキュリティ)（SQL 文字列に値を直接連結しない）を人間のコードレビューだけに頼らずに確認できる。同梱されており導入コストが無い。
 
 ### CI: GitHub Actions
 
 [N-33](./non-functional.md#開発プロセス品質) で「main への直接 push をしない」と定めているが、ブランチ保護は「PR を経由すること」しか強制しない。**テストが緑であることを強制するには、PR 契機で自動実行される仕組みが要る**。[N-16](./non-functional.md#保守性運用)（`bundle exec rspec` が全緑）と N-34・N-35 も、ローカルでの実行を自己申告するだけでは担保にならない。
 
-`.github/workflows/ci.yml` を 1 つ置き、PR で次を実行する。
+**ワークフローはゼロから書かない。** `rails new`（`--skip-ci` を付けない）が `.github/workflows/ci.yml` を生成し、そこには既に「PR と main への push を契機に、Brakeman・bundler-audit・RuboCop を実行する」ジョブが入っている。これを土台に、足りないジョブだけ足す。
 
-| ジョブ | 実行内容 |
-| --- | --- |
-| backend | `bundle exec rspec` / `bundle exec rubocop` / `bundle exec bundler-audit check --update` |
-| frontend | `npm run lint`（ESLint）/ `npx prettier --check` / `vue-tsc --noEmit` / `npm audit` |
+| ジョブ | 実行内容 | 出所 |
+| --- | --- | --- |
+| `scan_ruby` | `bin/brakeman` / `bin/bundler-audit` | 生成物のまま |
+| `lint` | `bin/rubocop` | 生成物のまま |
+| `test` | `bundle exec rspec` | **追加**（`--skip-test` により生成されないため） |
+| `frontend` | ESLint / `prettier --check` / `vue-tsc --noEmit` / `npm audit` | **追加** |
 
-PostgreSQL 16 は Actions の `services:` で起動する。**ローカルの `docker-compose.yml` とは別の定義になる**点に注意する（同じイメージ・同じメジャーバージョンを指定して [N-37](./non-functional.md#開発プロセス品質) の環境差異を避ける）。
+`test` ジョブの PostgreSQL 16 は Actions の `services:` で起動する。**ローカルの `docker-compose.yml` とは別の定義になる**点に注意する（同じイメージ・同じメジャーバージョンを指定して [N-37](./non-functional.md#開発プロセス品質) の環境差異を避ける）。
 
-これらを main のブランチ保護の**必須チェック**に指定することで、N-33 が仕組みとして成立する。
+4 つのジョブすべてを main のブランチ保護の**必須チェック**に指定することで、N-33 が仕組みとして成立する。
 
 **自動デプロイ（CD）は行わない。** デプロイは [plan.md のフェーズ6](./plan.md#フェーズ6-aws) の `deploy.sh` による手動手順とする。自動化するには GitHub と AWS の OIDC 連携などの設定が増え、デプロイ先が単一 EC2 で、ダウンタイムも許容している（[N-38](./non-functional.md#デプロイバックアップ)）構成では見合わない。
 
@@ -275,6 +306,8 @@ Terraform 1.10 以降は S3 backend の `use_lockfile = true` でロックファ
 | ECS / Fargate + ALB | 学習用途の単一環境に対して構成要素が多く、コストも上がる |
 | Kamal（Rails 8 標準のデプロイツール） | 複数ホストへのゼロダウンタイムデプロイを前提にした作りで、単一 EC2・ダウンタイム許容（[N-38](./non-functional.md#デプロイバックアップ)）の構成には機能が過剰。`deploy.sh` で足りる |
 | Solid Queue / Solid Cache / Solid Cable | 非同期ジョブ・キャッシュ・WebSocket をいずれも使わない |
+| Action Mailer / Mailbox / Text、Active Storage | メール送受信・リッチテキスト・ファイル添付をいずれも使わない（画像添付は[対象外](./requirements.md#22-対象外作らないもの)） |
+| rubocop-rails / rubocop-rspec の個別導入 | Rails 同梱の `rubocop-rails-omakase` が Rails 公式の設定一式を提供するため、重ねて入れない |
 | GitHub Actions による自動デプロイ（CD） | AWS との OIDC 連携などの設定が増える一方、デプロイ先は単一 EC2 で手動手順で足りる。CI（テストと lint）のみ採用する |
 | DynamoDB（tfstate のロック用） | Terraform 1.10 以降の S3 ネイティブロックで代替できる |
 | ECR | EC2 上でイメージをビルドすれば足り、リポジトリを 1 つ増やす必要がない |

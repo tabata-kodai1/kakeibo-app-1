@@ -27,12 +27,12 @@
 | --- | --- | --- |
 | 1 | リポジトリ構成を決める | `backend/`、`frontend/`、`infra/`、`docs/` |
 | 2 | Docker Compose で PostgreSQL 16 と Rails を起動できるようにする（データは名前付きボリューム、ログは `max-size` / `max-file` を指定） | `docker-compose.yml` |
-| 3 | Rails を API モードで初期化する（[生成オプション](./tech-stack.md#生成時に落とすもの)に従い Kamal / Solid / Thruster / minitest / CI を外す） | `backend/` |
-| 4 | RSpec と FactoryBot を導入する | `backend/spec/`、`.rspec` |
+| 3 | Rails を API モードで初期化する（[生成時のオプション](./tech-stack.md#生成時のオプション)のコマンドをそのまま使う。`--skip-ci` は付けない） | `backend/` |
+| 4 | Jbuilder・rack-cors・RSpec・FactoryBot を Gemfile に追加する（[自分で追加するもの](./tech-stack.md#自分で追加するもの)） | `backend/spec/`、`.rspec` |
 | 5 | Vite + Vue 3 + TypeScript を初期化する | `frontend/` |
 | 6 | Vite の proxy で `/api` を Rails に転送する設定を入れる | `frontend/vite.config.ts` |
-| 7 | RuboCop / ESLint / Prettier / bundler-audit を導入する | `.rubocop.yml`、`eslint.config.js`、`.prettierrc` |
-| 8 | CI のワークフローを作る（RSpec・lint・型チェック・audit） | `.github/workflows/ci.yml` |
+| 7 | フロント側の ESLint / Prettier を導入する（Ruby 側は生成物の RuboCop をそのまま使う） | `eslint.config.js`、`.prettierrc` |
+| 8 | 生成された CI ワークフローに `test`（RSpec）と `frontend` のジョブを追加する | `.github/workflows/ci.yml` |
 | 9 | `.gitignore` を整える | `master.key`、`.env`、`node_modules`、`*.tfvars` を除外 |
 
 ### 完了条件
@@ -42,8 +42,9 @@
 - Vite が `localhost:5173` で起動し、ブラウザから Vue の初期画面が見える
 - フロントから `/api/...` を叩くと proxy 経由で Rails に届く（CORS エラーが出ない）
 - `bundle exec rspec` がエラーなく実行できる（テストは 0 件でよい）
-- `bundle exec rubocop` と ESLint / Prettier が警告なしで通る（[N-34](./non-functional.md#開発プロセス品質)）
-- PR を作ると CI が実行され、緑になる。main のブランチ保護で必須チェックに指定されている（[N-33](./non-functional.md#開発プロセス品質)）
+- `bin/rubocop` と ESLint / Prettier が警告なしで通る（[N-34](./non-functional.md#開発プロセス品質)）
+- `bin/brakeman` と `bin/bundler-audit` が警告なしで通る（[N-35](./non-functional.md#開発プロセス品質)）
+- PR を作ると CI の 4 ジョブ（`scan_ruby` / `lint` / `test` / `frontend`）が実行されて緑になり、main のブランチ保護で必須チェックに指定されている（[N-33](./non-functional.md#開発プロセス品質)）
 - `docker compose down` → `up` の後もデータが残る（名前付きボリュームの確認、[N-05](./non-functional.md#信頼性可用性)）
 
 ---
