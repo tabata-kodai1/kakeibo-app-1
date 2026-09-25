@@ -3,5 +3,8 @@
 # 自身のグローバル IP を /32 で指定する（例: curl https://checkip.amazonaws.com で確認）
 allowed_cidr = "203.0.113.10/32"
 
+# SSH の公開鍵（~/.ssh/id_ed25519.pub の中身）。秘密鍵は書かない
+ssh_public_key = "ssh-ed25519 AAAA...example"
+
 # 英数字のみ 16 文字以上
 db_password = "ChangeMeToRandomAlnum"

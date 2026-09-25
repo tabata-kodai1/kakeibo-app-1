@@ -14,6 +14,16 @@ variable "allowed_cidr" {
   }
 }
 
+variable "ssh_public_key" {
+  description = "EC2 に登録する SSH 公開鍵（deploy.sh が接続する）。秘密鍵ではなく公開鍵（~/.ssh/*.pub の中身）を指定する"
+  type        = string
+
+  validation {
+    condition     = can(regex("^ssh-(rsa|ed25519) ", var.ssh_public_key))
+    error_message = "ssh-ed25519 または ssh-rsa で始まる公開鍵を指定してください。秘密鍵（-----BEGIN ...）は指定できません。"
+  }
+}
+
 variable "db_name" {
   description = "RDS に作る DB 名"
   type        = string
