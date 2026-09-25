@@ -64,3 +64,12 @@ export interface SearchConditions {
   /** yyyy-MM-dd */
   to: string
 }
+
+/** 収支の追加・編集で送る内容（POST /api/entries・PUT /api/entries/{id}）。PUT は 4 項目すべてを置き換える */
+export interface EntryPayload {
+  entry_date: string
+  category_id: number
+  amount: number
+  /** 空白のみの入力は未入力として null にする */
+  memo: string | null
+}

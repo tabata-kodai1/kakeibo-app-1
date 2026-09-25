@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ApiError, fetchCategories, fetchEntries, fetchSummary } from './api'
+import {
+  ApiError,
+  asApiError,
+  bulkDeleteEntries,
+  bulkUpdateEntries,
+  createEntry,
+  deleteEntry,
+  fetchCategories,
+  fetchEntries,
+  fetchSummary,
+  saveBudget,
+  updateEntry,
+} from './api'
 import BudgetModal from './components/BudgetModal.vue'
 import BulkActionBar from './components/BulkActionBar.vue'
 import CategoryBreakdown from './components/CategoryBreakdown.vue'
@@ -12,8 +24,9 @@ import ErrorBanner from './components/ErrorBanner.vue'
 import MonthNav from './components/MonthNav.vue'
 import SearchBar from './components/SearchBar.vue'
 import SummaryPanel from './components/SummaryPanel.vue'
-import type { Category, Entry, SearchConditions, Summary } from './types'
+import type { Category, Entry, EntryPayload, SearchConditions, Summary } from './types'
 import {
+  bulkUpdateMessage,
   countLabel,
   emptyConditions,
   emptyMessage,
@@ -21,10 +34,11 @@ import {
   periodNote,
 } from './utils/entryList'
 import { currentMonth, defaultEntryDate, shiftMonth } from './utils/format'
+import type { EntryFormErrors } from './utils/validation'
 
 // 状態管理ライブラリは入れず、ref / computed で持つ（docs/tech-stack.md）。
-// 取得系は実際の API に繋いでいる。更新系（モーダルの「保存」「削除する」、一括操作の「適用」）は、
-// 次の Issue で API に繋ぐまで、検証と画面の遷移までを行い、データは更新しない。
+// 取得系・更新系ともに実際の API に繋いでいる。更新に成功したら、画面の値は API から取り直す
+// （docs/screens.md「更新に成功したあとの画面」）。
 const month = ref(currentMonth())
 
 // 反映済みの検索条件。検索に成功した時点で変わり、月を切り替えても保持される（docs/screens.md「検索条件の扱い」）
@@ -48,7 +62,7 @@ const searchError = ref<string | null>(null)
 
 function showError(error: unknown) {
   // ApiError の message は、そのままバナーに出す文言になっている（src/api/client.ts）
-  banner.value = error instanceof ApiError ? error.message : '予期しない応答を受け取りました'
+  banner.value = asApiError(error).message
 }
 
 async function loadCategories() {
@@ -104,6 +118,7 @@ async function loadEntries(conditions: SearchConditions) {
       return
     }
     entries.value = []
+    clearSelection()
     entriesStatus.value = settledEntriesStatus = 'error'
     showError(error)
   }
@@ -179,43 +194,173 @@ function finishSelectMode() {
   clearSelection()
 }
 
+// --- 更新系（F-02・F-05〜F-07・F-09）
+// 送信中は、保存・削除する・変更するを無効にし、閉じる操作も無効にする（N-22。docs/screens.md「送信中の扱い」）
+const sending = ref(false)
+
+async function send(action: () => Promise<unknown>): Promise<ApiError | null> {
+  sending.value = true
+  try {
+    await action()
+    return null
+  } catch (error) {
+    return asApiError(error)
+  } finally {
+    sending.value = false
+  }
+}
+
+// 更新に成功したら、サマリー・内訳・明細一覧を取り直す。明細は反映済みの検索条件のまま取り直し、選択は解除される。
+// 予算設定は明細が変わらないので、サマリーと内訳だけ
+function reloadAfterUpdate(scope: 'all' | 'summary' = 'all') {
+  loadSummary()
+  if (scope === 'all') loadEntries(applied.value)
+}
+
+/**
+ * 400 の `errors` を、入力欄の下に出す分と、モーダル内の上部に出す分に分ける。
+ * 項目に紐づくエラーは該当欄の下に、それ以外（項目のないエラー、404・500・通信失敗）は上部に出す
+ */
+function splitErrors<K extends string>(error: ApiError, fields: readonly K[]) {
+  const known: Partial<Record<K, string>> = {}
+  let unknown = false
+  for (const [key, message] of Object.entries(error.errors ?? {})) {
+    if ((fields as readonly string[]).includes(key)) known[key as K] = message
+    else unknown = true
+  }
+  const hasKnown = Object.keys(known).length > 0
+  return {
+    fields: hasKnown ? known : null,
+    message: hasKnown && !unknown ? null : error.message,
+  }
+}
+
 // --- 収支入力モーダル（S-02）。編集中の明細は、閉じるときの表示崩れを避けるため開閉とは別に持つ
 const entryModalOpen = ref(false)
 const editingEntry = ref<Entry | null>(null)
+const entryServerErrors = ref<EntryFormErrors | null>(null)
+const entryServerMessage = ref<string | null>(null)
 
-function openAddModal() {
-  editingEntry.value = null
+function openEntryModal(entry: Entry | null) {
+  editingEntry.value = entry
+  entryServerErrors.value = null
+  entryServerMessage.value = null
   entryModalOpen.value = true
 }
 
-function openEditModal(entry: Entry) {
-  editingEntry.value = entry
-  entryModalOpen.value = true
+const openAddModal = () => openEntryModal(null)
+const openEditModal = (entry: Entry) => openEntryModal(entry)
+
+async function saveEntry(payload: EntryPayload) {
+  beginOperation()
+  entryServerErrors.value = null
+  entryServerMessage.value = null
+  const editing = editingEntry.value
+  const error = await send(() =>
+    editing ? updateEntry(editing.id, payload) : createEntry(payload),
+  )
+  if (!error) {
+    entryModalOpen.value = false
+    reloadAfterUpdate()
+    return
+  }
+  const { fields, message } = splitErrors(error, ['entry_date', 'category_id', 'amount', 'memo'])
+  entryServerErrors.value = fields
+  entryServerMessage.value = message
+  // 編集の 404（別の操作ですでに消えている）は、画面の状態がずれているので取り直す
+  if (error.kind === 'not_found') reloadAfterUpdate()
 }
 
 // --- 予算設定モーダル（S-04）
 const budgetModalOpen = ref(false)
+const budgetServerError = ref<string | null>(null)
+const budgetServerMessage = ref<string | null>(null)
+
+function openBudgetModal() {
+  budgetServerError.value = null
+  budgetServerMessage.value = null
+  budgetModalOpen.value = true
+}
+
+async function saveBudgetAmount(amount: number) {
+  beginOperation()
+  budgetServerError.value = null
+  budgetServerMessage.value = null
+  const error = await send(() => saveBudget(month.value, amount))
+  if (!error) {
+    budgetModalOpen.value = false
+    reloadAfterUpdate('summary')
+    return
+  }
+  const { fields, message } = splitErrors(error, ['amount'])
+  budgetServerError.value = fields?.amount ?? null
+  budgetServerMessage.value = message
+}
 
 // --- 削除確認ダイアログ（S-03）。単体は行の削除ボタン、一括は一括操作バーの「削除」から開く
 const deleteOpen = ref(false)
 const deleteBulk = ref(false)
+const deletingEntry = ref<Entry | null>(null)
 const deleteMessage = computed(() =>
   deleteBulk.value ? `${selectedCount.value}件のデータを削除します。` : 'このデータを削除します。',
 )
 
-function openDeleteDialog(bulk: boolean) {
-  deleteBulk.value = bulk
+function openDeleteDialog(entry: Entry) {
+  deleteBulk.value = false
+  deletingEntry.value = entry
   deleteOpen.value = true
 }
 
-function confirmDelete() {
-  deleteOpen.value = false
-  if (deleteBulk.value) clearSelection() // 更新後は選択を解除する（F-09）
+function openBulkDeleteDialog() {
+  deleteBulk.value = true
+  deleteOpen.value = true
 }
 
-// 一括更新の「適用」。更新後は選択が解除される（F-09）
-function applyBulk() {
-  clearSelection()
+// 失敗したら、ダイアログを閉じてエラーバナーを出し、一覧とサマリーを取り直す（画面の状態がずれている可能性があるため）
+async function confirmDelete() {
+  beginOperation()
+  const ids = [...selectedIds.value]
+  const entry = deletingEntry.value
+  const error = await send(() =>
+    deleteBulk.value ? bulkDeleteEntries(ids) : deleteEntry(entry!.id),
+  )
+  deleteOpen.value = false
+  if (error) showError(error)
+  reloadAfterUpdate()
+}
+
+// --- 一括更新の確認ダイアログ（N-23）。「適用」を押すと、変更内容を示して確認する
+const applyOpen = ref(false)
+const pendingChanges = ref<{ category_id: number | null; entry_date: string }>({
+  category_id: null,
+  entry_date: '',
+})
+const applyMessage = computed(() =>
+  bulkUpdateMessage(
+    selectedCount.value,
+    categories.value.find((c) => c.id === pendingChanges.value.category_id)?.name ?? null,
+    pendingChanges.value.entry_date,
+  ),
+)
+
+function openApplyDialog(changes: { category_id: number | null; entry_date: string }) {
+  pendingChanges.value = changes
+  applyOpen.value = true
+}
+
+async function confirmApply() {
+  beginOperation()
+  const ids = [...selectedIds.value]
+  const { category_id, entry_date } = pendingChanges.value
+  // 指定した項目だけを送る（両方指定も可）
+  const changes = {
+    ...(category_id !== null && { category_id }),
+    ...(entry_date !== '' && { entry_date }),
+  }
+  const error = await send(() => bulkUpdateEntries(ids, changes))
+  applyOpen.value = false
+  if (error) showError(error)
+  reloadAfterUpdate()
 }
 </script>
 
@@ -236,7 +381,7 @@ function applyBulk() {
       <SummaryPanel
         :summary="summary"
         :period-note="periodNote(applied, month)"
-        @open-budget="budgetModalOpen = true"
+        @open-budget="openBudgetModal"
       />
       <CategoryBreakdown :categories="summary.categories" />
     </template>
@@ -259,8 +404,8 @@ function applyBulk() {
       :selected-count="selectedCount"
       :selected-type="selectedType"
       :categories="categories"
-      @apply="applyBulk"
-      @delete="openDeleteDialog(true)"
+      @apply="openApplyDialog"
+      @delete="openBulkDeleteDialog"
       @done="finishSelectMode"
     />
     <EntryListHead v-else :count-label="count" @add="openAddModal" @select="selectMode = true" />
@@ -272,7 +417,7 @@ function applyBulk() {
       :select-mode="selectMode"
       :selected-ids="selectedIds"
       @edit="openEditModal"
-      @delete="openDeleteDialog(false)"
+      @delete="openDeleteDialog"
       @toggle="toggleRow"
       @toggle-all="toggleAll"
     />
@@ -282,21 +427,42 @@ function applyBulk() {
       :entry="editingEntry"
       :categories="categories"
       :default-date="defaultEntryDate(month)"
+      :busy="sending"
+      :server-errors="entryServerErrors"
+      :server-message="entryServerMessage"
       @close="entryModalOpen = false"
-      @save="entryModalOpen = false"
+      @save="saveEntry"
     />
     <BudgetModal
       :open="budgetModalOpen"
       :month="month"
       :budget="summary?.budget ?? null"
+      :busy="sending"
+      :server-error="budgetServerError"
+      :server-message="budgetServerMessage"
       @close="budgetModalOpen = false"
-      @save="budgetModalOpen = false"
+      @save="saveBudgetAmount"
     />
     <ConfirmDialog
       :open="deleteOpen"
+      title="削除の確認"
       :message="deleteMessage"
+      hint="この操作は取り消せません。"
+      confirm-label="削除する"
+      danger
+      :busy="sending"
       @cancel="deleteOpen = false"
       @confirm="confirmDelete"
+    />
+    <ConfirmDialog
+      :open="applyOpen"
+      title="変更の確認"
+      :message="applyMessage"
+      hint="変更前の値には戻せません。"
+      confirm-label="変更する"
+      :busy="sending"
+      @cancel="applyOpen = false"
+      @confirm="confirmApply"
     />
   </div>
 </template>

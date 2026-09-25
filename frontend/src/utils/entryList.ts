@@ -43,7 +43,7 @@ export function isPeriodOutsideMonth(conditions: SearchConditions, month: string
 }
 
 /** "2026-01-01" → "2026/01/01" */
-function toSlashDate(date: string): string {
+export function toSlashDate(date: string): string {
   return date.replaceAll('-', '/')
 }
 
@@ -81,4 +81,20 @@ export function emptyMessage(conditions: SearchConditions): string {
 /** サマリー領域の期間注記。明細が対象月の外を含むときだけ、サマリーが指す期間を示す */
 export function periodNote(conditions: SearchConditions, month: string): string | null {
   return isPeriodOutsideMonth(conditions, month) ? `表示中の期間: ${formatMonthLabel(month)}` : null
+}
+
+/**
+ * 一括更新の確認ダイアログの本文（docs/screens.md「一括更新の確認」）。
+ * 指定した項目だけを示す。指定していない日付やカテゴリには触れない
+ */
+export function bulkUpdateMessage(
+  count: number,
+  categoryName: string | null,
+  date: string,
+): string {
+  const category = categoryName === null ? null : `カテゴリを「${categoryName}」`
+  const day = date === '' ? null : `日付を ${toSlashDate(date)} `
+  if (category && day) return `${count}件の${category}に、${day}に変更します。`
+  if (category) return `${count}件の${category}に変更します。`
+  return `${count}件の${day}に変更します。`
 }
