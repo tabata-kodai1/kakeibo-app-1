@@ -13,6 +13,16 @@ output "frontend_bucket" {
   value       = aws_s3_bucket.frontend.bucket
 }
 
+output "db_name" {
+  description = "RDS の DB 名。DATABASE_URL に使う（deploy.sh が読む）"
+  value       = aws_db_instance.main.db_name
+}
+
+output "db_username" {
+  description = "RDS のマスターユーザー名。DATABASE_URL に使う（deploy.sh が読む）。パスワードは出力せず、tfvars から読む"
+  value       = aws_db_instance.main.username
+}
+
 output "rds_endpoint" {
   description = "RDS のホスト名。DATABASE_URL（mysql2://user:password@<host>/<db>）に使う"
   value       = aws_db_instance.main.address
