@@ -1,0 +1,4 @@
+#!/bin/sh
+# コミットの直前に、ステージ済みの差分に入れてはいけない値がないか検査する。
+# 落ちたらコミットは作られない。有効化は .githooks/setup.sh（core.hooksPath の設定）。
+exec bash "$(git rev-parse --show-toplevel)/.githooks/scan.sh"
