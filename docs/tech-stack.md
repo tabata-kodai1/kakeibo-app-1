@@ -31,7 +31,7 @@ flowchart LR
 | CORS | rack-cors | 最新安定版 |
 | テスト | RSpec Rails + FactoryBot | 最新安定版 |
 | データベース | MySQL | 8.4（LTS） |
-| フロントエンド言語 | TypeScript | 5.x 系 |
+| フロントエンド言語 | TypeScript | 6.x 系 |
 | フロントエンドFW | Vue | 3 系（Composition API） |
 | ビルドツール | Vite | 最新安定版 |
 | HTTPクライアント | fetch（標準API） | - |
