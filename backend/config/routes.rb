@@ -13,6 +13,7 @@ Rails.application.routes.draw do
     resources :entries, only: :index
     resources :categories, only: :index
     resource :summary, only: :show
+    put "budgets/:year_month", to: "budgets#update"
 
     # 該当するルートがない /api/* は 404 の JSON で返す
     match "*unmatched", to: "errors#not_found", via: :all

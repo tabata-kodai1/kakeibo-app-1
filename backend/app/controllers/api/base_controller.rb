@@ -12,6 +12,12 @@ class Api::BaseController < ApplicationController
       raise(Api::BadRequest.new("対象月の形式が不正です", errors: { month: "対象月の形式が不正です" }))
   end
 
+  # モデルのバリデーションエラーを 400 にする。errors は項目ごとに先頭のメッセージ 1 件
+  def raise_bad_request(record)
+    errors = record.errors.to_hash.transform_values(&:first)
+    raise Api::BadRequest.new(errors.values.first, errors: errors)
+  end
+
   def render_bad_request(error)
     body = { message: error.message }
     body[:errors] = error.errors if error.errors
