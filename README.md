@@ -52,9 +52,25 @@
 作業は GitHub Issue 単位に分割し、PR 経由で main に取り込む。main への直接 push はしない。
 詳細は [CONTRIBUTING.md](./CONTRIBUTING.md) を参照。
 
+## リポジトリ構成
+
+```
+backend/    Rails API
+frontend/   Vue + Vite
+infra/      Terraform
+docs/       設計書（正）
+```
+
 ## ローカル環境の構築
 
-> 実装着手前のため未記載。[plan.md のフェーズ1](./docs/plan.md#フェーズ1-初期化) で、クローン直後に手順どおり起動できる状態にする（[N-36](./docs/non-functional.md#開発プロセス品質)）。
+必要なツールは Docker Desktop と Node.js 20 以上。Ruby はコンテナ側で動かすため、ホストへの導入は不要。
+
+```
+cp .env.example .env     # DB の接続情報。.env は Git にコミットしない
+docker compose up        # MySQL と Rails API
+```
+
+> フロントエンド（`npm run dev`）の手順は、[#13](https://github.com/tabata-kodai1/kakeibo-app-1/issues/13) で `frontend/` を初期化したときに追記する。
 
 ## 現在の状況
 

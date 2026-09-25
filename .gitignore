@@ -1,0 +1,28 @@
+# 秘密情報（N-11）
+.env
+**/config/master.key
+**/config/credentials/*.key
+*.tfvars
+*.tfvars.json
+
+# 依存
+node_modules/
+/backend/vendor/bundle/
+
+# ビルド成果物
+/frontend/dist/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# ログ・一時ファイル
+*.log
+/backend/log/*
+/backend/tmp/*
+/backend/storage/*
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
