@@ -23,13 +23,13 @@ RSpec.describe Category, type: :model do
   end
 
   it "同じ区分内で名前が重複すれば無効" do
-    create(:category, name: "その他", category_type: Category::EXPENSE)
-    expect(build(:category, name: "その他", category_type: Category::EXPENSE)).not_to be_valid
+    create(:category, name: "重複確認用", category_type: Category::EXPENSE)
+    expect(build(:category, name: "重複確認用", category_type: Category::EXPENSE)).not_to be_valid
   end
 
   it "区分が違えば同じ名前でも有効" do
-    create(:category, name: "その他", category_type: Category::EXPENSE)
-    expect(build(:category, name: "その他", category_type: Category::INCOME)).to be_valid
+    create(:category, name: "重複確認用", category_type: Category::EXPENSE)
+    expect(build(:category, name: "重複確認用", category_type: Category::INCOME)).to be_valid
   end
 
   it "使用中のカテゴリは DB の外部キー制約で削除できない" do
