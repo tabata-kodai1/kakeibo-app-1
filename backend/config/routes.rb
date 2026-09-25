@@ -9,6 +9,22 @@ Rails.application.routes.draw do
   # 本番の API は /api 配下に置くため、この 1 本も同じ前置きにそろえている。
   get "api/health" => "health#show"
 
+  namespace :api, defaults: { format: :json } do
+    # 一括操作。DELETE /entries/bulk が下の resources の destroy（:id = "bulk"）に取られないよう、先に書く
+    patch "entries/bulk", to: "bulk_entries#update"
+    delete "entries/bulk", to: "bulk_entries#destroy"
+
+    resources :entries, only: %i[index create destroy]
+    # resources の update は PATCH も通してしまう。設計書は PUT のみ（PATCH は一括更新の /entries/bulk 用）
+    put "entries/:id", to: "entries#update"
+    resources :categories, only: :index
+    resource :summary, only: :show
+    put "budgets/:year_month", to: "budgets#update"
+
+    # 該当するルートがない /api/* は 404 の JSON で返す
+    match "*unmatched", to: "errors#not_found", via: :all
+  end
+
   # Defines the root path route ("/")
   # root "posts#index"
 end
