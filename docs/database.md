@@ -10,6 +10,7 @@ MySQL 固有の型の選択:
 | `utf8mb4`（`utf8` ではなく） | MySQL の `utf8` は 3 バイトまでで、絵文字や一部の漢字を保存できない |
 | `DATETIME(6)`（`TIMESTAMP` ではなく） | `TIMESTAMP` は 2038 年で上限に達する。Rails の `t.timestamps` も MySQL では `datetime(6)` を生成する |
 | `utf8mb4_0900_ai_ci` | `ci`（case-insensitive）により、メモのキーワード検索（[F-08](./features.md#f-08-検索絞り込み)）の「大文字小文字を区別しない部分一致」が `LIKE` だけで成立する |
+
 認証なし・単一ユーザーのため、ユーザーを表すテーブルは持たない（[requirements.md](./requirements.md#22-対象外作らないもの) 参照）。
 
 ## ER 図
@@ -19,28 +20,30 @@ erDiagram
     categories ||--o{ entries : "分類する"
 
     categories {
-        bigserial id PK
-        varchar   name
-        varchar   category_type
-        timestamp created_at
+        bigint   id PK
+        varchar  name
+        varchar  category_type
+        datetime created_at
     }
     entries {
-        bigserial id PK
-        date      entry_date
-        bigint    category_id FK
-        integer   amount
-        varchar   memo
-        timestamp created_at
-        timestamp updated_at
+        bigint   id PK
+        date     entry_date
+        bigint   category_id FK
+        int      amount
+        varchar  memo
+        datetime created_at
+        datetime updated_at
     }
     budgets {
-        bigserial id PK
-        varchar   year_month UK
-        integer   amount
-        timestamp created_at
-        timestamp updated_at
+        bigint   id PK
+        varchar  year_month UK
+        int      amount
+        datetime created_at
+        datetime updated_at
     }
 ```
+
+図中の型は MySQL の型名を短く書いたもの。桁数・`AUTO_INCREMENT`・精度（`DATETIME(6)`）を含む正確な定義は、次のテーブル定義を参照する。
 
 `budgets` は他のテーブルと関連を持たない。月（`year_month`）をキーに、集計時に `entries` と突き合わせる。
 
