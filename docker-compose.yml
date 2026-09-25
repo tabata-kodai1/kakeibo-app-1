@@ -1,0 +1,54 @@
+# ローカル開発用。db（MySQL）と api（Rails）の 2 サービス。
+# Vite はホストで npm run dev として動かす（docs/tech-stack.md の docker-compose.yml の構成）。
+
+x-logging: &default-logging
+  # ログでディスクを食い潰さないよう上限を設ける（docs/non-functional.md N-19）
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: mysql:8.4
+    # utf8mb4 と utf8mb4_0900_ai_ci を明示する。絵文字や一部の漢字を保存でき、
+    # ci（大文字小文字を区別しない）がメモのキーワード検索にそのまま効く（docs/tech-stack.md）
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+    volumes:
+      # 名前付きボリューム。匿名ボリュームだとコンテナ再作成でデータが消える（N-05）
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *default-logging
+
+  api:
+    build: ./backend
+    command: ./bin/rails server -b 0.0.0.0 -p 3000
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      # 標準出力に出すことで、EC2 上のファイルとしても docker logs でも読める（N-19）
+      RAILS_LOG_TO_STDOUT: "1"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/rails
+      # gem をホスト側と混ぜない
+      - bundle:/usr/local/bundle
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *default-logging
+
+volumes:
+  db-data:
+  bundle:
