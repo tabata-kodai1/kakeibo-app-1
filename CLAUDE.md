@@ -62,6 +62,8 @@ docs: 設計書を正とする方針を N-18 に明記する
 - **残額の計算に収入は含めない。** `remaining = budget - expense_total`
 - **予算 0 円と予算未設定は別の状態。** 未設定は行が存在しない状態で、`budget`・`remaining`・`usage_rate` は `null` を返す
 - 金額はすべて整数。タイムゾーンは `Asia/Tokyo`
+- **`git archive HEAD:backend` はルートの `.gitattributes` を読まない。** サブツリーだけを対象にするため `eol=lf` が効かず、Windows の `autocrlf=true` で `bin/` のスクリプトが CRLF になり、shebang が壊れてコンテナが起動しない（`bash: -: invalid option`）。`deploy.sh` は `git -c core.autocrlf=false archive` で LF のまま送る
+- **`docker build -` で標準入力から tar を渡す形は使わない。** EC2 上のディレクトリに展開してからビルドする（`deploy.sh`）
 
 ## 品質
 
