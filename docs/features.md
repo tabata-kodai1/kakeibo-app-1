@@ -103,8 +103,10 @@ GET /api/summary?month=2026-09
   "usage_rate": 65,
   "over_budget": false,
   "categories": [
-    { "category_id": 1, "category_name": "食費", "amount": 32100, "rate": 61 },
-    { "category_id": 2, "category_name": "日用品", "amount": 8200, "rate": 16 }
+    { "category_id": 1, "category_name": "食費",   "amount": 32100, "rate": 61 },
+    { "category_id": 2, "category_name": "日用品", "amount":  8200, "rate": 16 },
+    { "category_id": 7, "category_name": "娯楽費", "amount":  8000, "rate": 15 },
+    { "category_id": 3, "category_name": "交通費", "amount":  4000, "rate":  8 }
   ]
 }
 ```
@@ -192,7 +194,9 @@ PUT /api/budgets/2026-09
 ```json
 "categories": [
   { "category_id": 1, "category_name": "食費",   "amount": 32100, "rate": 61 },
-  { "category_id": 4, "category_name": "住居費", "amount": 70200, "rate": 39 }
+  { "category_id": 2, "category_name": "日用品", "amount":  8200, "rate": 16 },
+  { "category_id": 7, "category_name": "娯楽費", "amount":  8000, "rate": 15 },
+  { "category_id": 3, "category_name": "交通費", "amount":  4000, "rate":  8 }
 ]
 ```
 
@@ -459,6 +463,8 @@ DELETE /api/entries/bulk
 - `ids` が空配列のとき 400 になること
 - **`ids` に存在しない ID が含まれるとき 404 になり、1 件も更新されないこと**（トランザクションで全件成功か全件失敗か）
 - `category_id` も `entry_date` も指定がないとき 400 になること
+- 不正な形式・実在しない日付の `entry_date` を指定したとき 400 になり、1 件も更新されないこと
+- 存在しない `category_id` を指定したとき 400 になり、1 件も更新されないこと
 - 選択行に支出と収入が混在しているとき、一括カテゴリ変更が 400 になり 1 件も更新されないこと
 - 支出だけを選んで収入カテゴリを指定したときも 400 になること
 - 一括削除では、確認ダイアログに件数が表示されること
