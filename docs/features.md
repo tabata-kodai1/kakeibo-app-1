@@ -19,12 +19,12 @@
 
 | メソッド | パス | 機能 |
 | --- | --- | --- |
-| GET | `/api/records` | レコード一覧取得（検索条件つき） |
-| POST | `/api/records` | レコード追加 |
-| PUT | `/api/records/{id}` | レコード更新 |
-| PATCH | `/api/records/bulk` | 複数レコードの一括更新 |
-| PATCH | `/api/records/order` | 表示順の一括更新（ドラッグ&ドロップ） |
-| DELETE | `/api/records/{id}` | レコード削除 |
+| GET | `/api/entries` | レコード一覧取得（検索条件つき） |
+| POST | `/api/entries` | レコード追加 |
+| PUT | `/api/entries/{id}` | レコード更新 |
+| PATCH | `/api/entries/bulk` | 複数レコードの一括更新 |
+| PATCH | `/api/entries/order` | 表示順の一括更新（ドラッグ&ドロップ） |
+| DELETE | `/api/entries/{id}` | レコード削除 |
 | GET | `/api/categories` | カテゴリ一覧取得 |
 
 リクエスト／レスポンスの形式は JSON（`application/json`、UTF-8）とする。
@@ -34,13 +34,13 @@
 ```json
 {
   "id": 1,
-  "recordDate": "2026-09-25",
-  "categoryId": 3,
-  "categoryName": "食費",
-  "categoryType": "EXPENSE",
+  "entry_date": "2026-09-25",
+  "category_id": 3,
+  "category_name": "食費",
+  "category_type": "EXPENSE",
   "amount": 1280,
   "memo": "スーパーで買い物",
-  "sortOrder": 100
+  "sort_order": 100
 }
 ```
 
@@ -50,8 +50,8 @@
 
 | 項目 | 規則 | エラーメッセージ例 |
 | --- | --- | --- |
-| `recordDate` | 必須。`yyyy-MM-dd` 形式の実在する日付 | 日付を入力してください |
-| `categoryId` | 必須。`categories` に存在する ID | カテゴリを選択してください |
+| `entry_date` | 必須。`yyyy-MM-dd` 形式の実在する日付 | 日付を入力してください |
+| `category_id` | 必須。`categories` に存在する ID | カテゴリを選択してください |
 | `amount` | 必須。1 以上 9,999,999 以下の整数 | 金額は1以上の整数で入力してください |
 | `memo` | 任意。200 文字以内 | メモは200文字以内で入力してください |
 
@@ -76,18 +76,18 @@
 なし（検索条件は [F-03](#f-03-検索絞り込み) で追加する）
 
 ### 出力
-レコードの配列。表示順（`sortOrder` 昇順、同値の場合は `record_date` 降順、さらに `id` 降順）で返す。
+レコードの配列。表示順（`sort_order` 昇順、同値の場合は `entry_date` 降順、さらに `id` 降順）で返す。
 
 ```
-GET /api/records
+GET /api/entries
 → 200 OK
-[ { "id": 1, "recordDate": "2026-09-25", ... }, ... ]
+[ { "id": 1, "entry_date": "2026-09-25", ... }, ... ]
 ```
 
 ### 受け入れ条件
 - レコードが 0 件のとき、空配列 `[]` と 200 が返ること
-- レコードが複数あるとき、`sortOrder` 昇順で並んで返ること
-- レスポンスの各要素に、カテゴリ名（`categoryName`）と収支区分（`categoryType`）が含まれること
+- レコードが複数あるとき、`sort_order` 昇順で並んで返ること
+- レスポンスの各要素に、カテゴリ名（`category_name`）と収支区分（`category_type`）が含まれること
 - `GET /api/categories` でカテゴリ一覧（収入・支出それぞれ）が取得できること
 
 ---
@@ -104,7 +104,7 @@ GET /api/records
 一覧画面（[S-01](./screens.md#s-01-一覧画面)）の表示。モックアップは [mockups/index.html](./mockups/index.html)。
 
 ### 受け入れ条件
-- 画面を開くと自動で `GET /api/records` が呼ばれ、結果が表に表示されること
+- 画面を開くと自動で `GET /api/entries` が呼ばれ、結果が表に表示されること
 - 各行に 日付 / カテゴリ / 金額 / メモ が表示されること
 - 支出は金額が赤系、収入は緑系で表示され、区別できること
 - 金額が 3 桁区切り（例: `1,280`）で表示されること
@@ -125,13 +125,13 @@ GET /api/records
 | --- | --- | --- |
 | `from` | `yyyy-MM-dd` | 開始日（この日を含む） |
 | `to` | `yyyy-MM-dd` | 終了日（この日を含む） |
-| `categoryId` | 数値 | カテゴリ ID |
+| `category_id` | 数値 | カテゴリ ID |
 | `keyword` | 文字列 | メモの部分一致（大文字小文字を区別しない） |
 
 すべて任意。複数指定した場合は AND 条件。
 
 ```
-GET /api/records?from=2026-09-01&to=2026-09-30&categoryId=3&keyword=スーパー
+GET /api/entries?from=2026-09-01&to=2026-09-30&category_id=3&keyword=スーパー
 ```
 
 ### 出力
@@ -141,7 +141,7 @@ GET /api/records?from=2026-09-01&to=2026-09-30&categoryId=3&keyword=スーパー
 - 条件を何も指定しない場合、全件返ること
 - `from` のみ指定で、その日以降のレコードだけが返ること（境界日を含む）
 - `to` のみ指定で、その日以前のレコードだけが返ること（境界日を含む）
-- `categoryId` 指定で、そのカテゴリのレコードだけが返ること
+- `category_id` 指定で、そのカテゴリのレコードだけが返ること
 - `keyword` 指定で、メモに部分一致するレコードだけが返ること
 - 複数条件の指定が AND で効くこと
 - 一致件数が 0 のとき、空配列と「該当するデータがありません」の表示になること
@@ -157,17 +157,17 @@ GET /api/records?from=2026-09-01&to=2026-09-30&categoryId=3&keyword=スーパー
 
 ### 入力
 ```
-POST /api/records
-{ "recordDate": "2026-09-25", "categoryId": 3, "amount": 1280, "memo": "スーパーで買い物" }
+POST /api/entries
+{ "entry_date": "2026-09-25", "category_id": 3, "amount": 1280, "memo": "スーパーで買い物" }
 ```
 
 ### 出力
 ```
 → 201 Created
-{ "id": 12, "recordDate": "2026-09-25", "categoryId": 3, "categoryName": "食費", "categoryType": "EXPENSE", "amount": 1280, "memo": "スーパーで買い物", "sortOrder": 1200 }
+{ "id": 12, "entry_date": "2026-09-25", "category_id": 3, "category_name": "食費", "category_type": "EXPENSE", "amount": 1280, "memo": "スーパーで買い物", "sort_order": 1200 }
 ```
 
-`sortOrder` はサーバ側で採番する（既存の最大値 + 100。詳細は [database.md](./database.md#表示順-sort_order-の採番)）。
+`sort_order` はサーバ側で採番する（既存の最大値 + 100。詳細は [database.md](./database.md#表示順-sort_order-の採番)）。
 
 ### 受け入れ条件
 - 「追加」ボタンで空の入力モーダル（[S-02](./screens.md#s-02-追加編集モーダル)）が開くこと
@@ -177,7 +177,7 @@ POST /api/records
 - 必須項目が未入力のとき、400 が返り、該当項目の下にエラーメッセージが表示されること
 - 金額に 0 や負数、小数、文字列を入れると 400 になること
 - メモが 201 文字以上のとき 400 になること
-- 存在しない `categoryId` を送ると 400 になること
+- 存在しない `category_id` を送ると 400 になること
 - 「キャンセル」で何も登録されずにモーダルが閉じること
 
 ---
@@ -191,14 +191,14 @@ POST /api/records
 
 **内容の更新**
 ```
-PUT /api/records/12
-{ "recordDate": "2026-09-26", "categoryId": 4, "amount": 1500, "memo": "訂正" }
+PUT /api/entries/12
+{ "entry_date": "2026-09-26", "category_id": 4, "amount": 1500, "memo": "訂正" }
 ```
 
 **並び替え**
 ```
-PATCH /api/records/order
-{ "orders": [ { "id": 12, "sortOrder": 100 }, { "id": 8, "sortOrder": 200 }, { "id": 5, "sortOrder": 300 } ] }
+PATCH /api/entries/order
+{ "orders": [ { "id": 12, "sort_order": 100 }, { "id": 8, "sort_order": 200 }, { "id": 5, "sort_order": 300 } ] }
 ```
 
 ### 出力
@@ -217,9 +217,9 @@ PATCH /api/records/order
 並び替え:
 - 行の左端のハンドルをドラッグして行を移動できること
 - ドラッグ中、移動先の位置が視覚的に分かること
-- ドロップ時に `PATCH /api/records/order` が呼ばれ、204 が返ること
+- ドロップ時に `PATCH /api/entries/order` が呼ばれ、204 が返ること
 - 画面をリロードしても、並び替え後の順序が保たれていること
-- 並び替えは 1 リクエストで、影響のある全行の `sortOrder` をまとめて更新すること（1 行ずつ送らない）
+- 並び替えは 1 リクエストで、影響のある全行の `sort_order` をまとめて更新すること（1 行ずつ送らない）
 - API が失敗した場合、一覧の並びを元に戻し、エラーバナーを表示すること
 - 検索で絞り込んでいる状態では並び替えを無効化する（一覧が部分集合だと順序が壊れるため。ハンドルを非活性にし、理由を表示する）
 
@@ -232,20 +232,20 @@ PATCH /api/records/order
 
 ### 入力
 ```
-PATCH /api/records/bulk
-{ "ids": [3, 5, 8], "categoryId": 4 }
+PATCH /api/entries/bulk
+{ "ids": [3, 5, 8], "category_id": 4 }
 ```
 ```
-PATCH /api/records/bulk
-{ "ids": [3, 5, 8], "recordDate": "2026-09-30" }
+PATCH /api/entries/bulk
+{ "ids": [3, 5, 8], "entry_date": "2026-09-30" }
 ```
 
-`categoryId` と `recordDate` は任意項目で、指定された項目だけを更新する（両方指定も可、両方未指定は 400）。
+`category_id` と `entry_date` は任意項目で、指定された項目だけを更新する（両方指定も可、両方未指定は 400）。
 
 ### 出力
 ```
 → 200 OK
-{ "updatedCount": 3 }
+{ "updated_count": 3 }
 ```
 
 ### 受け入れ条件
@@ -256,7 +256,7 @@ PATCH /api/records/bulk
 - 更新後に選択状態が解除され、一覧が最新化されること
 - `ids` が空配列のとき 400 になること
 - `ids` に存在しない ID が含まれるとき 404 になり、**1 件も更新されない**こと（トランザクションで全件成功か全件失敗）
-- `categoryId` も `recordDate` も指定がないとき 400 になること
+- `category_id` も `entry_date` も指定がないとき 400 になること
 
 ---
 
@@ -267,7 +267,7 @@ PATCH /api/records/bulk
 
 ### 入力
 ```
-DELETE /api/records/12
+DELETE /api/entries/12
 ```
 複数削除は、選択された ID それぞれに対して削除を行う。
 

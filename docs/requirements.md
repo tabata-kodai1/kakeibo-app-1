@@ -83,4 +83,6 @@
 | [features.md](./features.md) | 機能一覧と受け入れ条件、API 仕様 |
 | [screens.md](./screens.md) | 画面一覧、画面遷移、画面要素 |
 | [database.md](./database.md) | ER 図、テーブル定義、初期データ |
+| [tech-stack.md](./tech-stack.md) | 技術選定と理由、開発環境の前提 |
+| [plan.md](./plan.md) | 実装計画（6フェーズ）と Issue の分割 |
 | [mockups/index.html](./mockups/index.html) | 一覧画面のモックアップ |
