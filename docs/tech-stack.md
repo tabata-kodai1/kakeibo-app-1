@@ -46,7 +46,7 @@ flowchart LR
 
 Rails を選ぶ実務上の理由:
 
-- ルーティング、バリデーション、DBアクセス、マイグレーション、テストが**フレームワークに最初から揃っている**。ライブラリの寄せ集めにならず、[features.md](./features.md) の 7 本の API を短い記述で実装できる
+- ルーティング、バリデーション、DBアクセス、マイグレーション、テストが**フレームワークに最初から揃っている**。ライブラリの寄せ集めにならず、[features.md](./features.md) の 9 本の API を短い記述で実装できる
 - `rescue_from` により、[エラーレスポンス](./features.md#エラーレスポンス)（400 / 404 / 500）の形式を 1 箇所で共通化できる
 - マイグレーションが標準機能のため、[database.md](./database.md) のテーブル定義をバージョン管理でき、ローカルと RDS に同じ手順でスキーマを適用できる
 
@@ -110,7 +110,7 @@ Rails には Hotwire を使ったフルスタック構成もあるが、**手順
 
 ### HTTPクライアント: 標準の fetch
 
-使う API は 8 本だけで、axios のインターセプタ等の機能を必要としない。API 呼び出しは `src/api/` に薄いラッパ関数としてまとめ、エラーレスポンスの解釈をそこに集約する。
+使う API は 9 本だけで、axios のインターセプタ等の機能を必要としない。API 呼び出しは `src/api/` に薄いラッパ関数としてまとめ、エラーレスポンスの解釈をそこに集約する。
 
 ### テスト: RSpec + FactoryBot（リクエストスペック）
 
@@ -132,7 +132,7 @@ PostgreSQL をコンテナで起動し、ローカルに DB を直接インス�
 | EC2 | Rails API を Docker で実行。パブリックサブネットに配置 |
 | RDS（PostgreSQL） | データ永続化。プライベートサブネットに配置し、EC2 のセキュリティグループからのみ接続を許可 |
 
-課題の指定。構成をコード化することで、`terraform destroy` による確実な後片付けができる（[requirements.md の非機能要件](./requirements.md#5-非機能要件)）。
+課題の指定。構成をコード化することで、`terraform destroy` による確実な後片付けができる（[non-functional.md の N-17](./non-functional.md#保守性運用)）。
 ECS や ALB は使わない。常時稼働・冗長化が要件外のため、単一 EC2 + Docker が最小構成として妥当。
 
 ## 採用しなかった選択肢
@@ -174,3 +174,4 @@ Windows 上で Ruby を直接動かすと gem のビルドでつまずくこと�
 
 DB の接続情報などの環境依存値は、ソースコードに直接書かず環境変数から読み込む（`DATABASE_URL`、`ALLOWED_ORIGINS`）。
 Rails の `config/master.key`、RDS のパスワードを含む `.tfvars`、`.env` は Git にコミットしない（`.gitignore` に追加する）。
+これは [non-functional.md の N-11](./non-functional.md#セキュリティ) に対応する。

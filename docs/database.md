@@ -125,7 +125,7 @@ erDiagram
 | `index_entries_on_category_id` | `entries(category_id)` | カテゴリ絞り込み（F-08）、カテゴリ別集計（F-03）、結合 |
 | `index_budgets_on_year_month` | `budgets(year_month)` | 一意制約により自動的に作成される |
 
-メモのキーワード検索（F-08）は部分一致（`ILIKE '%...%'`）のため通常のインデックスが効かない。要件の想定件数が 1,000 件程度（[requirements.md の非機能要件](./requirements.md#5-非機能要件)）であり、全件走査で許容範囲と判断してインデックスは張らない。
+メモのキーワード検索（F-08）は部分一致（`ILIKE '%...%'`）のため通常のインデックスが効かない。要件の想定件数が 1,000 件程度（[non-functional.md の N-03](./non-functional.md#利用環境性能)）であり、全件走査で許容範囲と判断してインデックスは張らない。
 
 ## 月の絞り込み方法
 
@@ -177,4 +177,5 @@ WHERE entry_date >= '2026-09-01' AND entry_date < '2026-10-01'
 | `PUT /api/entries/{id}` | 1 行 UPDATE（`updated_at` を更新） |
 | `PATCH /api/entries/bulk` | 複数行を 1 トランザクションで UPDATE。1 件でも対象外 ID があれば全体をロールバック |
 | `DELETE /api/entries/{id}` | 1 行 DELETE |
+| `DELETE /api/entries/bulk` | 複数行を 1 トランザクションで DELETE。1 件でも対象外 ID があれば全体をロールバック |
 | `PUT /api/budgets/{year_month}` | `year_month` で検索し、あれば UPDATE、なければ INSERT |
