@@ -71,6 +71,8 @@ docker compose up                 # MySQL（3306）と Rails API（3000）
 cd frontend && npm ci && npm run dev   # Vite（5173）
 ```
 
+Claude Code を使う場合は、上の 3 手順を `start-servers` スキル（`bash .claude/skills/start-servers/start.sh`）で 1 コマンドにまとめて実行できる（[N-36](./docs/non-functional.md#開発プロセス品質)）。
+
 ブラウザで http://localhost:5173 を開く。`/api` へのリクエストは Vite の proxy で Rails（3000）に転送されるため、開発中に CORS は発生しない。
 
 | 対象 | コマンド | 実行場所 |
