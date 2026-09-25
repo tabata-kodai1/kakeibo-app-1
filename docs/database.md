@@ -144,7 +144,7 @@ erDiagram
 WHERE entry_date >= '2026-09-01' AND entry_date < '2026-10-01'
 ```
 
-`EXTRACT` や `TO_CHAR` で年月を取り出して比較する書き方（`WHERE TO_CHAR(entry_date, 'YYYY-MM') = '2026-09'`）は避ける。**列に関数を適用するとインデックスが使われなくなる**ため。範囲比較なら `index_entries_on_entry_date` が効く。
+`YEAR()` / `MONTH()` / `DATE_FORMAT()` で年月を取り出して比較する書き方（`WHERE DATE_FORMAT(entry_date, '%Y-%m') = '2026-09'`）は避ける。**列に関数を適用するとインデックスが使われなくなる**ため。範囲比較なら `index_entries_on_entry_date` が効く。
 
 ## 初期データ（categories のシード）
 
