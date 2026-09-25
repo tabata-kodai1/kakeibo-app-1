@@ -26,12 +26,14 @@
 | # | 作業 | 成果物 |
 | --- | --- | --- |
 | 1 | リポジトリ構成を決める | `backend/`、`frontend/`、`infra/`、`docs/` |
-| 2 | Docker Compose で PostgreSQL 16 を起動できるようにする | `docker-compose.yml` |
-| 3 | Rails を API モードで初期化する | `backend/`（`rails new --api --database=postgresql`） |
-| 4 | RSpec と FactoryBot を導入する | `backend/spec/`、`.rspec` |
+| 2 | Docker Compose で PostgreSQL 16 と Rails を起動できるようにする（データは名前付きボリューム、ログは `max-size` / `max-file` を指定） | `docker-compose.yml` |
+| 3 | Rails を API モードで初期化する（[生成時のオプション](./tech-stack.md#生成時のオプション)のコマンドをそのまま使う。`--skip-ci` は付けない） | `backend/` |
+| 4 | Jbuilder・rack-cors・RSpec・FactoryBot を Gemfile に追加する（[自分で追加するもの](./tech-stack.md#自分で追加するもの)） | `backend/spec/`、`.rspec` |
 | 5 | Vite + Vue 3 + TypeScript を初期化する | `frontend/` |
 | 6 | Vite の proxy で `/api` を Rails に転送する設定を入れる | `frontend/vite.config.ts` |
-| 7 | `.gitignore` を整える | `master.key`、`.env`、`node_modules`、`*.tfvars` を除外 |
+| 7 | フロント側の ESLint / Prettier を導入する（Ruby 側は生成物の RuboCop をそのまま使う） | `eslint.config.js`、`.prettierrc` |
+| 8 | 生成された CI ワークフローに `test`（RSpec）と `frontend` のジョブを追加する | `.github/workflows/ci.yml` |
+| 9 | `.gitignore` を整える | `master.key`、`.env`、`node_modules`、`*.tfvars` を除外 |
 
 ### 完了条件
 
@@ -40,6 +42,10 @@
 - Vite が `localhost:5173` で起動し、ブラウザから Vue の初期画面が見える
 - フロントから `/api/...` を叩くと proxy 経由で Rails に届く（CORS エラーが出ない）
 - `bundle exec rspec` がエラーなく実行できる（テストは 0 件でよい）
+- `bin/rubocop` と ESLint / Prettier が警告なしで通る（[N-34](./non-functional.md#開発プロセス品質)）
+- `bin/brakeman` と `bin/bundler-audit` が警告なしで通る（[N-35](./non-functional.md#開発プロセス品質)）
+- PR を作ると CI の 4 ジョブ（`scan_ruby` / `lint` / `test` / `frontend`）が実行されて緑になり、main のブランチ保護で必須チェックに指定されている（[N-33](./non-functional.md#開発プロセス品質)）
+- `docker compose down` → `up` の後もデータが残る（名前付きボリュームの確認、[N-05](./non-functional.md#信頼性可用性)）
 
 ---
 
@@ -54,7 +60,7 @@
 | 1 | `categories` テーブルのマイグレーション | [database.md](./database.md#categoriesカテゴリ) |
 | 2 | `entries` テーブルのマイグレーション（外部キー・チェック制約・インデックス含む） | [database.md](./database.md#entries収支レコード) |
 | 3 | `budgets` テーブルのマイグレーション（`year_month` の一意制約含む） | [database.md](./database.md#budgets月次予算) |
-| 4 | `Category` モデル（`has_many :entries`、`type` のバリデーション） | 同上 |
+| 4 | `Category` モデル（`has_many :entries`、`category_type` のバリデーション） | 同上 |
 | 5 | `Entry` モデル（`belongs_to :category`、各項目のバリデーション） | [features.md のバリデーション規則](./features.md#バリデーション規則) |
 | 6 | `Budget` モデル（`year_month` の形式と一意性のバリデーション） | 同上 |
 | 7 | カテゴリの初期データを seed に書く | [database.md の初期データ](./database.md#初期データcategories-のシード) |
@@ -62,7 +68,7 @@
 
 ### 注意点
 
-- `type` は ActiveRecord が**単一テーブル継承（STI）用に予約している列名**のため、`Category` モデル側で STI を無効化する設定が必要になる。回避できない場合は列名を `category_type` に変更し、[database.md](./database.md) を更新する
+- カテゴリの収支区分の列名は **`category_type`** とする（`type` は ActiveRecord が STI 用に予約している列名のため）。[tech-stack.md の命名の方針](./tech-stack.md#命名の方針)のとおり、API の JSON キーとも一致するため変換処理は不要
 - `amount` のチェック制約は、DB 制約とモデルバリデーションの両方に入れる
 - `budgets.year_month` の一意制約は、DB 側にも必ず入れる（[F-02](./features.md#f-02-予算の設定) の「2回目は上書きされる」を保証する土台になる）
 
@@ -87,7 +93,7 @@
 | 検索API | [F-08](./features.md#f-08-検索絞り込み) | `GET /api/entries?category_id=&keyword=&from=&to=` |
 | 追加API | [F-05](./features.md#f-05-収支の追加) | `POST /api/entries` |
 | 更新・削除API | [F-06](./features.md#f-06-収支の編集), [F-07](./features.md#f-07-収支の削除) | `PUT /api/entries/{id}`、`DELETE /api/entries/{id}` |
-| 一括更新API | [F-09](./features.md#f-09-一括更新) | `PATCH /api/entries/bulk` |
+| 一括更新・一括削除API | [F-09](./features.md#f-09-一括更新) | `PATCH /api/entries/bulk`、`DELETE /api/entries/bulk` |
 
 明細一覧APIを最初にするのは、他のすべての API が `entries` の取得を前提にするため。
 月次サマリーAPIを 2 番目にするのは、これがアプリの中心機能（[F-01](./features.md#f-01-月次サマリー)）であり、早い段階で形にしておきたいため。
@@ -100,13 +106,15 @@
 - エラーハンドリングの共通化（`rescue_from` で 400 / 404 / 500 を [features.md の形式](./features.md#エラーレスポンス)に整形）
 - レスポンスの JSON 整形（Jbuilder のテンプレート、キーは snake_case）
 - 月の絞り込みの共通化（[database.md の方針](./database.md#月の絞り込み方法)どおり、範囲比較で書く）
+- [アプリケーション設定](./tech-stack.md#アプリケーション設定)（`config.time_zone = "Asia/Tokyo"`、`filter_parameters` に `:memo` を追加）
 
 ### 完了条件
 
 - すべてのエンドポイントが実装され、リクエストスペックが緑
 - 各機能の受け入れ条件が、漏れなく `it` として存在する
 - 月次サマリーで、予算未設定の月が `null` を返しエラーにならないことがテストで確認できている
-- 一括更新（F-09）で、対象外 ID が 1 件でも含まれる場合に**何も更新されない**ことがテストで確認できている
+- 一括更新・一括削除（F-09）で、対象外 ID が 1 件でも含まれる場合に**何も更新・削除されない**ことがテストで確認できている
+- 収支区分をまたぐカテゴリ変更が、単体編集（F-06）と一括更新（F-09）の両方で 400 になることがテストで確認できている
 - 月をまたいだデータが集計に混ざらないことがテストで確認できている
 
 ---
@@ -126,7 +134,8 @@
 
 - `Entry` / `Category` / `Summary` / `Budget` の TypeScript 型定義（[features.md のJSON表現](./features.md#レコードの-json-表現)と一致させる）
 - コンポーネント分割（`MonthNav` / `SummaryPanel` / `CategoryBreakdown` / `SearchBar` / `EntryTable` / `EntryRow` / `BulkActionBar` / `EntryFormModal` / `BudgetModal` / `ConfirmDialog`）
-- 金額の 3 桁区切り表示と、収入 `+` / 支出 `-` の表示を担う共通関数
+- 金額の 3 桁区切り表示と、収入 `+` / 支出 `-` の表示を担う共通関数（桁区切りは `Intl.NumberFormat` を使い、自前で書かない）
+- モーダルは HTML 標準の `<dialog>` + `showModal()` で実装する（Esc での閉じとフォーカストラップが標準で効くため。[N-21](./non-functional.md#使い勝手)）
 
 ### 完了条件
 
@@ -154,8 +163,11 @@
 - 予算設定 → 支出を追加 → 残額が減る → 削除 → 残額が戻る、が通しで動く
 - 月を切り替えると、サマリー・内訳・明細がすべて連動して変わる
 - 絞り込み中でも、サマリーと内訳が対象月全体の値のままであること
+- 対象月の外を含む期間検索を行うと、サマリー領域に対象月を示す注記が出ること
 - バリデーションエラー時に、該当項目の下にメッセージが出る
 - API を止めた状態でエラーバナーが出る
+- 保存・削除ボタンが送信中に非活性になり、連打してもレコードが重複しない（[N-22](./non-functional.md#使い勝手)）
+- 応答がない状態でもローディングが止まり、エラーバナーに切り替わる（[N-26](./non-functional.md#使い勝手)）
 
 ---
 
@@ -173,6 +185,10 @@ Terraform でインフラを構築し、デプロイする。
 ### 注意点
 
 - 本番は S3 と EC2 でオリジンが異なるため、`rack-cors` の設定が必須になる。ここを忘れると画面は表示されるが API が全滅する
+- **接続元 IP の制限は API と画面の両方に要る**。EC2 のセキュリティグループは S3 に効かないため、フロント配信用バケットのバケットポリシーに `aws:SourceIp` の条件を付ける（[N-08](./non-functional.md#セキュリティ)）
+- `deploy.sh` の `aws s3 sync` は `--cache-control` を出し分ける。ハッシュ付きの JS / CSS は長期キャッシュ、`index.html` はキャッシュさせない（[N-39](./non-functional.md#デプロイバックアップ)）
+- 無料枠の EC2 はメモリが 1GB 程度で、**そのままでは Rails のイメージビルドがメモリ不足で失敗しやすい**。初期化スクリプトでスワップを確保しておく
+- RDS は `backup_retention_period` を指定して自動バックアップを有効にする（[N-40](./non-functional.md#デプロイバックアップ)）
 - 機密値（RDS パスワード）は `.tfvars` に置き、Git にコミットしない
 - EC2 と RDS は**起動している時間だけ課金**される。検証が終わったら `terraform destroy` で撤去する（手順9）
 
@@ -188,9 +204,9 @@ Terraform でインフラを構築し、デプロイする。
 
 | 手順 | このドキュメントとの関係 |
 | --- | --- |
-| 手順4（GitHub運用ルール） | フェーズ1の前に実施する。`CLAUDE.md`、`CONTRIBUTING.md`、Issue/PRテンプレート、main 保護 |
+| 手順4（GitHub運用ルール） | フェーズ1の前に実施する。`CLAUDE.md`、`CONTRIBUTING.md`、Issue/PRテンプレート、main 保護（CI を必須チェックに指定するのは、CI を作るフェーズ1の後） |
 | 手順5（土台づくり） | フェーズ1に相当 |
 | 手順6（機能実装） | フェーズ3〜5に相当 |
-| 手順7（スキルと品質監査） | フェーズ5の完了後。`start-servers`、`quality-check` を用意し、docs と実装のずれを直す |
+| 手順7（スキルと品質監査） | フェーズ5の完了後。`start-servers`、`quality-check` を用意し、設計書と実装のずれを直す（[N-18](./non-functional.md#保守性運用) のとおり**設計書を正とし、実装側を合わせる**。設計を変える判断をした場合のみ、先に設計書を直す） |
 | 手順8（AWS） | フェーズ6に相当 |
 | 手順9（仕上げ） | レビュー指摘の修正、`terraform destroy` |

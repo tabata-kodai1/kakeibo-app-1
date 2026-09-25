@@ -12,7 +12,7 @@ erDiagram
     categories {
         bigserial id PK
         varchar   name
-        varchar   type
+        varchar   category_type
         timestamp created_at
     }
     entries {
@@ -45,7 +45,7 @@ erDiagram
 | --- | --- | --- | --- | --- |
 | `id` | `BIGSERIAL` | ○ | 自動採番 | 主キー |
 | `name` | `VARCHAR(50)` | ○ | - | カテゴリ名（例: 食費、給与） |
-| `type` | `VARCHAR(10)` | ○ | - | 収支区分。`INCOME` または `EXPENSE` |
+| `category_type` | `VARCHAR(10)` | ○ | - | 収支区分。`INCOME` または `EXPENSE` |
 | `created_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
 
 制約:
@@ -53,10 +53,10 @@ erDiagram
 | 種別 | 内容 |
 | --- | --- |
 | 主キー | `id` |
-| 一意 | `(name, type)` — 同一区分内での名称重複を防ぐ |
-| チェック | `type IN ('INCOME', 'EXPENSE')` |
+| 一意 | `(name, category_type)` — 同一区分内での名称重複を防ぐ |
+| チェック | `category_type IN ('INCOME', 'EXPENSE')` |
 
-> **実装時の注意**: `type` は ActiveRecord が単一テーブル継承（STI）用に予約している列名のため、モデル側で STI を無効化する設定が必要になる。回避できない場合は列名を `category_type` に変更し、本ドキュメントを更新する。
+> **列名を `category_type` とする理由**: `type` は ActiveRecord が単一テーブル継承（STI）用に予約している列名で、そのまま使うには `Category` モデルで STI を無効化する設定（`self.inheritance_column = nil`）が必要になる。一方 [features.md の JSON 表現](./features.md#レコードの-json-表現) では、この値を `category_type` というキーで返す。列名を最初から `category_type` にしておけば、Rails の規約に逆らう設定も、JSON キーへの変換処理も、どちらも不要になる。
 
 ### entries（収支レコード）
 
@@ -67,7 +67,7 @@ erDiagram
 | `id` | `BIGSERIAL` | ○ | 自動採番 | 主キー |
 | `entry_date` | `DATE` | ○ | - | 収支が発生した日。時刻は持たない |
 | `category_id` | `BIGINT` | ○ | - | `categories.id` への外部キー |
-| `amount` | `INTEGER` | ○ | - | 金額（円）。常に正の値で保持し、収入/支出は `categories.type` で判断する |
+| `amount` | `INTEGER` | ○ | - | 金額（円）。常に正の値で保持し、収入/支出は `categories.category_type` で判断する |
 | `memo` | `VARCHAR(200)` | - | `NULL` | メモ。未入力可 |
 | `created_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
 | `updated_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 更新日時。更新のたびに現在時刻で上書きする |
@@ -125,7 +125,7 @@ erDiagram
 | `index_entries_on_category_id` | `entries(category_id)` | カテゴリ絞り込み（F-08）、カテゴリ別集計（F-03）、結合 |
 | `index_budgets_on_year_month` | `budgets(year_month)` | 一意制約により自動的に作成される |
 
-メモのキーワード検索（F-08）は部分一致（`ILIKE '%...%'`）のため通常のインデックスが効かない。要件の想定件数が 1,000 件程度（[requirements.md の非機能要件](./requirements.md#5-非機能要件)）であり、全件走査で許容範囲と判断してインデックスは張らない。
+メモのキーワード検索（F-08）は部分一致（`ILIKE '%...%'`）のため通常のインデックスが効かない。要件の想定件数が 1,000 件程度（[non-functional.md の N-03](./non-functional.md#利用環境性能)）であり、全件走査で許容範囲と判断してインデックスは張らない。
 
 ## 月の絞り込み方法
 
@@ -139,7 +139,7 @@ WHERE entry_date >= '2026-09-01' AND entry_date < '2026-10-01'
 
 ## 初期データ（categories のシード）
 
-アプリ初回起動時に投入する。`(name, type)` の一意制約により、再実行しても重複しない形で流す。
+アプリ初回起動時に投入する。`(name, category_type)` の一意制約により、再実行しても重複しない形で流す。
 
 ### 支出（EXPENSE）
 
@@ -170,11 +170,12 @@ WHERE entry_date >= '2026-09-01' AND entry_date < '2026-10-01'
 
 | API | 主な DB 操作 |
 | --- | --- |
-| `GET /api/summary` | `entries` を対象月で絞り、`categories` と結合して `type` 別に合計。カテゴリ別は `GROUP BY category_id`。あわせて `budgets` を `year_month` で 1 行取得 |
+| `GET /api/summary` | `entries` を対象月で絞り、`categories` と結合して `category_type` 別に合計。カテゴリ別は `GROUP BY category_id`。対象月の総件数を `COUNT` で取得（`entry_count`）。あわせて `budgets` を `year_month` で 1 行取得 |
 | `GET /api/entries` | `entries` と `categories` を結合し、月・検索条件で絞り込んで `entry_date` 降順で取得 |
-| `GET /api/categories` | `categories` を `type`, `id` 順で全件取得 |
+| `GET /api/categories` | `categories` を `category_type`, `id` 順で全件取得 |
 | `POST /api/entries` | 1 行 INSERT |
 | `PUT /api/entries/{id}` | 1 行 UPDATE（`updated_at` を更新） |
 | `PATCH /api/entries/bulk` | 複数行を 1 トランザクションで UPDATE。1 件でも対象外 ID があれば全体をロールバック |
 | `DELETE /api/entries/{id}` | 1 行 DELETE |
+| `DELETE /api/entries/bulk` | 複数行を 1 トランザクションで DELETE。1 件でも対象外 ID があれば全体をロールバック |
 | `PUT /api/budgets/{year_month}` | `year_month` で検索し、あれば UPDATE、なければ INSERT |
