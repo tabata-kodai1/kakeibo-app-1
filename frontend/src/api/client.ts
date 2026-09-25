@@ -44,6 +44,11 @@ const NETWORK_MESSAGE = 'サーバーに接続できませんでした。時間�
 const TIMEOUT_MESSAGE = 'サーバーからの応答がありません。時間をおいて再度お試しください'
 const UNEXPECTED_MESSAGE = '予期しない応答を受け取りました'
 
+/** 投げられたものが ApiError でなければ（想定外の例外）、想定外の応答として ApiError にそろえる */
+export function asApiError(error: unknown): ApiError {
+  return error instanceof ApiError ? error : new ApiError('unexpected', UNEXPECTED_MESSAGE)
+}
+
 type Query = Record<string, string | number | null | undefined>
 
 interface RequestOptions {

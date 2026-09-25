@@ -11,6 +11,12 @@ const props = defineProps<{
   month: string
   /** 現在の予算。未設定は null */
   budget: number | null
+  /** 送信中。保存を無効にし、閉じる操作も無効にする（N-22） */
+  busy: boolean
+  /** API が返した予算額のエラー（400） */
+  serverError: string | null
+  /** 項目に紐づかない失敗（404・500・通信失敗など）。モーダル内の上部に出す */
+  serverMessage: string | null
 }>()
 const emit = defineEmits<{ close: []; save: [amount: number] }>()
 
@@ -35,16 +41,31 @@ function onInput(event: Event) {
   error.value = null
 }
 
+// API が返した予算額のエラーを、入力欄の下に出す
+watch(
+  () => props.serverError,
+  (serverError) => {
+    if (serverError) error.value = serverError
+  },
+)
+
 function save() {
+  if (props.busy) return
   error.value = validateBudget(amount.value)
   if (error.value === null) emit('save', Number(amount.value.trim()))
 }
 </script>
 
 <template>
-  <ModalDialog :open="open" :title="`${formatMonthLabel(month)}の予算`" @close="emit('close')">
+  <ModalDialog
+    :open="open"
+    :title="`${formatMonthLabel(month)}の予算`"
+    :busy="busy"
+    @close="emit('close')"
+  >
     <form novalidate @submit.prevent="save">
       <div class="modal-body">
+        <span v-if="serverMessage" class="field-error" role="alert">{{ serverMessage }}</span>
         <div class="field">
           <label for="budget-amount">予算額<span class="required">必須</span></label>
           <input
@@ -61,8 +82,10 @@ function save() {
         </p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn" @click="emit('close')">キャンセル</button>
-        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn" :disabled="busy" @click="emit('close')">
+          キャンセル
+        </button>
+        <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
       </div>
     </form>
   </ModalDialog>

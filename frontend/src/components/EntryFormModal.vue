@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import type { Category, Entry } from '../types'
+import type { Category, Entry, EntryPayload } from '../types'
 import {
   toEntryPayload,
   validateEntryForm,
@@ -18,11 +18,14 @@ const props = defineProps<{
   categories: Category[]
   /** 追加時の日付の初期値 */
   defaultDate: string
+  /** 送信中。保存を無効にし、閉じる操作も無効にする（N-22） */
+  busy: boolean
+  /** API が返した項目ごとのエラー（400）。該当欄の下に出す */
+  serverErrors: EntryFormErrors | null
+  /** 項目に紐づかない失敗（404・500・通信失敗など）。モーダル内の上部に出す */
+  serverMessage: string | null
 }>()
-const emit = defineEmits<{
-  close: []
-  save: [payload: ReturnType<typeof toEntryPayload>]
-}>()
+const emit = defineEmits<{ close: []; save: [payload: EntryPayload] }>()
 
 const form = reactive<EntryFormValues>({ entry_date: '', category_id: null, amount: '', memo: '' })
 const errors = ref<EntryFormErrors>({})
@@ -58,6 +61,14 @@ const groups = computed(() => {
     }))
 })
 
+// API が返した項目ごとのエラーを、入力欄の下に出す
+watch(
+  () => props.serverErrors,
+  (serverErrors) => {
+    if (serverErrors) errors.value = { ...serverErrors }
+  },
+)
+
 function clearError(field: keyof EntryFormValues) {
   delete errors.value[field]
 }
@@ -70,6 +81,7 @@ function onAmountInput(event: Event) {
 }
 
 function save() {
+  if (props.busy) return
   errors.value = validateEntryForm(form)
   if (Object.keys(errors.value).length > 0) return
   emit('save', toEntryPayload(form))
@@ -77,9 +89,15 @@ function save() {
 </script>
 
 <template>
-  <ModalDialog :open="open" :title="isEdit ? '収支を編集' : '収支を追加'" @close="emit('close')">
+  <ModalDialog
+    :open="open"
+    :title="isEdit ? '収支を編集' : '収支を追加'"
+    :busy="busy"
+    @close="emit('close')"
+  >
     <form novalidate @submit.prevent="save">
       <div class="modal-body">
+        <span v-if="serverMessage" class="field-error" role="alert">{{ serverMessage }}</span>
         <div class="field">
           <label for="entry-date">日付<span class="required">必須</span></label>
           <input
@@ -131,8 +149,10 @@ function save() {
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn" @click="emit('close')">キャンセル</button>
-        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn" :disabled="busy" @click="emit('close')">
+          キャンセル
+        </button>
+        <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
       </div>
     </form>
   </ModalDialog>

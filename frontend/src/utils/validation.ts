@@ -1,3 +1,5 @@
+import type { EntryPayload } from '../types'
+
 // 入力の検証（docs/features.md「バリデーション規則」）。メッセージは API と同じものを使う。
 // フロントの検証は UX 向けで、正しさの担保はバックエンド（N-13）。
 // 誤りがなければ空のオブジェクトを返す。キーは入力欄の名前。
@@ -50,7 +52,7 @@ export function validateEntryForm(values: EntryFormValues): EntryFormErrors {
 }
 
 /** 送信する値。空白のみのメモは未入力として null にする（docs/features.md）。validateEntryForm が通ったあとに呼ぶ */
-export function toEntryPayload(values: EntryFormValues) {
+export function toEntryPayload(values: EntryFormValues): EntryPayload {
   return {
     entry_date: values.entry_date,
     category_id: values.category_id!,
