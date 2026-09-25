@@ -1,0 +1,5 @@
+# backend.hcl にコピーして値を入れる。backend.hcl は Git に入れない（.gitignore 済み）。
+# terraform init -backend-config=backend.hcl
+
+# infra/bootstrap の出力 bucket_name の値（kakeibo-tfstate-<アカウントID>）
+bucket = "kakeibo-tfstate-123456789012"
