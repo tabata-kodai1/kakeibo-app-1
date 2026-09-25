@@ -4,7 +4,6 @@ class EntrySearch
 
   # 該当がこれを超える検索は 400 にする（N-28）
   LIMIT = 1_000
-  DATE_FORMAT = /\A\d{4}-\d{2}-\d{2}\z/
 
   validate :validate_month, :validate_category_id, :validate_period
 
@@ -38,11 +37,11 @@ class EntrySearch
   end
 
   def from
-    @from ||= parse_date(@from_param)
+    @from ||= DateParam.parse(@from_param)
   end
 
   def to
-    @to ||= parse_date(@to_param)
+    @to ||= DateParam.parse(@to_param)
   end
 
   def validate_month
@@ -65,14 +64,5 @@ class EntrySearch
     return if errors.any?
 
     errors.add(:from, "開始日は終了日より前の日付を指定してください") if from && to && from > to
-  end
-
-  # yyyy-MM-dd 形式の実在する日付だけを受け付ける。不正なら nil
-  def parse_date(value)
-    return unless value.is_a?(String) && value.match?(DATE_FORMAT)
-
-    Date.strptime(value, "%Y-%m-%d")
-  rescue Date::Error
-    nil
   end
 end
