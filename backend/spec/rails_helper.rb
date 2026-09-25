@@ -45,6 +45,12 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
+  config.include ActiveSupport::Testing::TimeHelpers
+
+  # db:prepare が seed 済みのため、テスト DB にはカテゴリが最初から入っている。
+  # 「食費」などの名前や一覧の件数を各スペックで自由に組み立てられるよう、空にしてから始める
+  # （トランザクションで巻き戻るので、後続には影響しない）
+  config.before(:each, type: :request) { Category.delete_all }
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
