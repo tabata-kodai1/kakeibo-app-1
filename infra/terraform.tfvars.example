@@ -1,0 +1,7 @@
+# terraform.tfvars にコピーして値を入れる。terraform.tfvars は Git に入れない（.gitignore 済み）。
+
+# 自身のグローバル IP を /32 で指定する（例: curl https://checkip.amazonaws.com で確認）
+allowed_cidr = "203.0.113.10/32"
+
+# 英数字のみ 16 文字以上
+db_password = "ChangeMeToRandomAlnum"
