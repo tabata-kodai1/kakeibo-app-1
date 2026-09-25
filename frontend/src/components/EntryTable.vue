@@ -8,6 +8,8 @@ import EntryRow from './EntryRow.vue'
 const props = defineProps<{
   entries: Entry[]
   loading: boolean
+  /** 取得に失敗した（直前の値は残さず、失敗を示す） */
+  error?: boolean
   emptyMessage: string
   selectMode?: boolean
   selectedIds?: ReadonlySet<number>
@@ -32,6 +34,7 @@ const partiallySelected = computed(() => selectedCount.value > 0 && !allSelected
 <template>
   <div class="table-wrap">
     <div v-if="loading" class="loading" role="status">読み込み中…</div>
+    <div v-else-if="error" class="empty">読み込めませんでした</div>
     <div v-else-if="entries.length === 0" class="empty">{{ emptyMessage }}</div>
     <table v-else>
       <thead>

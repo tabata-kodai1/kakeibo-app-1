@@ -65,7 +65,7 @@ const barLabel = computed(() => {
       </template>
       <template v-else-if="over">
         <div class="label">超過</div>
-        <div class="value">{{ formatAmount(-summary.remaining) }}<span class="unit">円</span></div>
+        <div class="value">{{ formatAmount(summary.remaining) }}<span class="unit">円</span></div>
       </template>
       <template v-else>
         <div class="label">残り</div>
