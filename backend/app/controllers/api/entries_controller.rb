@@ -9,4 +9,19 @@ class Api::EntriesController < Api::BaseController
 
     @entries = entries
   end
+
+  def create
+    @entry = Entry.new(entry_params)
+    raise_bad_request(@entry) unless @entry.save
+
+    render :show, status: :created
+  end
+
+  private
+
+  # ハッシュや配列で送られた値は permit で落ちるため、モデルには届かず未入力と同じ扱いになる。
+  # id や created_at など、ここに挙げていない項目は無視される
+  def entry_params
+    params.permit(:entry_date, :category_id, :amount, :memo)
+  end
 end
