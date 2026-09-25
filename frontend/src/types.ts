@@ -51,3 +51,16 @@ export interface Budget {
   year_month: string
   amount: number
 }
+
+/**
+ * 検索バーの条件（F-08）。API のクエリパラメータに対応する（month は別に持つ）。
+ * 未指定は空文字（category_id だけ null）。API も空文字を「指定なし」として扱う。
+ */
+export interface SearchConditions {
+  category_id: number | null
+  keyword: string
+  /** yyyy-MM-dd */
+  from: string
+  /** yyyy-MM-dd */
+  to: string
+}

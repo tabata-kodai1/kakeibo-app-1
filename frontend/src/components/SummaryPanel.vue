@@ -4,7 +4,7 @@ import type { Summary } from '../types'
 import { formatAmount } from '../utils/format'
 
 // 月次サマリー（F-01）。画面の主役は「残額」（docs/screens.md S-01）
-const props = defineProps<{ summary: Summary }>()
+const props = defineProps<{ summary: Summary; periodNote?: string | null }>()
 const emit = defineEmits<{ 'open-budget': [] }>()
 
 const budgetSet = computed(() => props.summary.budget !== null)
@@ -71,6 +71,8 @@ const barLabel = computed(() => {
         <div class="label">残り</div>
         <div class="value">{{ formatAmount(summary.remaining) }}<span class="unit">円</span></div>
       </template>
+      <!-- 明細が対象月の外を含む期間検索中のみ。サマリーが指す期間を示す（F-08） -->
+      <div v-if="periodNote" class="note">{{ periodNote }}</div>
     </div>
   </div>
 </template>

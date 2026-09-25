@@ -13,6 +13,11 @@ export function formatSignedAmount(amount: number, categoryType: CategoryType): 
   return `${categoryType === 'INCOME' ? '+' : '-'}${formatAmount(amount)}`
 }
 
+/** 明細の日付列。"2026-09-25" → "09/25" */
+export function formatShortDate(date: string): string {
+  return date.slice(5).replace('-', '/')
+}
+
 /** "2026-09" → "2026年9月" */
 export function formatMonthLabel(month: string): string {
   const [year, monthNumber] = month.split('-')
