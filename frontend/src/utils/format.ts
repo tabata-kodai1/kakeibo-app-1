@@ -29,6 +29,12 @@ export function currentMonth(now: Date = new Date()): string {
   return toMonth(now.getFullYear(), now.getMonth() + 1)
 }
 
+/** 収支入力モーダルの日付の初期値。対象月が当月なら本日、それ以外ならその月の 1 日（docs/features.md F-05） */
+export function defaultEntryDate(month: string, today: Date = new Date()): string {
+  if (currentMonth(today) !== month) return `${month}-01`
+  return `${month}-${String(today.getDate()).padStart(2, '0')}`
+}
+
 /** 月を前後に動かす。shiftMonth("2026-01", -1) → "2025-12" */
 export function shiftMonth(month: string, delta: number): string {
   const [year, monthNumber] = month.split('-').map(Number)
