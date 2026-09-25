@@ -81,6 +81,8 @@ rails new backend --api --database=mysql \
 
 **Dockerfile は残す。** 本番の EC2 上で Rails をコンテナとして動かすため（[インフラ](#インフラ-terraform--ec2--rds--s3)）。
 
+ただし**生成される Dockerfile は本番専用**で、`RAILS_ENV=production`・`BUNDLE_WITHOUT=development` が固定され、アプリのコードをイメージに焼き込む作りになっている。この構成では RSpec も RuboCop も実行できず、ソースをバインドマウントする開発にも使えない。そのため**ローカル用に `backend/Dockerfile.dev` を別に置き**、compose の `api` はそちらをビルドする。生成物の Dockerfile は書き換えず、デプロイ時にそのまま使う。
+
 **`--skip-ci` は付けない。** 生成される `.github/workflows/ci.yml` をそのまま土台として使う（後述の [CI](#ci-github-actions)）。
 
 #### 生成物からそのまま使うもの
@@ -97,7 +99,7 @@ rails new backend --api --database=mysql \
 
 #### 自分で追加するもの
 
-**Jbuilder は API モードの Gemfile に含まれない**（コメントアウトではなく、行そのものが無い）。使うには明示的に追加する。Hash を `render json:` で返すこともできるが、[features.md](./features.md) の月次サマリー（予算・合計・カテゴリ別内訳を 1 レスポンスにまとめる）のような入れ子構造は、テンプレートとして書いたほうが見通しが良い。
+**Jbuilder は API モードの Gemfile で無効になっている**（`# gem "jbuilder"` とコメントアウトされた状態で生成される）。使うにはコメントを外して明示的に有効化する。Hash を `render json:` で返すこともできるが、[features.md](./features.md) の月次サマリー（予算・合計・カテゴリ別内訳を 1 レスポンスにまとめる）のような入れ子構造は、テンプレートとして書いたほうが見通しが良い。
 
 このほか `rack-cors`、`rspec-rails`、`factory_bot_rails` を追加する。
 
@@ -352,6 +354,7 @@ compose に書くべき設定:
 | --- | --- |
 | `db` のデータを**名前付きボリューム**に置く | `docker compose down` → `up` でデータが残ること（[N-05](./non-functional.md#信頼性可用性)）。匿名ボリュームだとコンテナ再作成で消える |
 | ログドライバの `max-size` / `max-file` | ログでディスクを食い潰さない（後述のログ方針） |
+| `api` は `backend/Dockerfile.dev` をビルドする | 生成物の Dockerfile は本番専用で、development の gem を含まない（[生成時のオプション](#生成時のオプション)） |
 
 #### ログの出力先
 
