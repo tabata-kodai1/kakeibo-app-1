@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家計簿 — 一覧画面（S-01）モックアップ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p class="mock-note">
+  モックアップ: <strong>S-01 一覧画面</strong>（<a href="../screens.md">screens.md</a>）。
+  静的HTMLのため操作はできません。一括操作バーは「3件選択中」の状態を表示しています。
+  追加・編集モーダルは <a href="entry-modal.html">entry-modal.html</a>。
+</p>
+
+<div class="app">
+
+  <div class="header">
+    <h1>家計簿</h1>
+    <button class="btn btn-primary">＋ 追加</button>
+  </div>
+
+  <!-- 集計バー -->
+  <div class="card summary">
+    <div class="summary-item">
+      <div class="label">収入</div>
+      <div class="value income">250,000</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">支出</div>
+      <div class="value expense">84,300</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">差額</div>
+      <div class="value">165,700</div>
+    </div>
+  </div>
+
+  <!-- 検索バー -->
+  <div class="card search">
+    <div class="field">
+      <label>期間</label>
+      <div class="range">
+        <input type="date" value="2026-09-01">
+        <span>〜</span>
+        <input type="date" value="2026-09-30">
+      </div>
+    </div>
+    <div class="field">
+      <label>カテゴリ</label>
+      <select>
+        <option>すべて</option>
+        <optgroup label="支出">
+          <option>食費</option>
+          <option>日用品</option>
+          <option>交通費</option>
+        </optgroup>
+        <optgroup label="収入">
+          <option>給与</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="field">
+      <label>キーワード</label>
+      <input type="text" placeholder="メモを検索">
+    </div>
+    <div class="search-actions">
+      <button class="btn btn-primary">検索</button>
+      <button class="btn">クリア</button>
+    </div>
+  </div>
+
+  <!-- 一括操作バー（1件以上選択時のみ表示） -->
+  <div class="card bulk-bar">
+    <span class="count">3件選択中</span>
+    <select>
+      <option>カテゴリを変更…</option>
+      <optgroup label="支出">
+        <option>食費</option>
+        <option>日用品</option>
+      </optgroup>
+      <optgroup label="収入">
+        <option>給与</option>
+      </optgroup>
+    </select>
+    <input type="date">
+    <button class="btn">適用</button>
+    <span class="spacer"></span>
+    <button class="btn btn-danger">削除</button>
+  </div>
+
+  <!-- 一覧テーブル -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-handle"></th>
+          <th class="col-check"><input type="checkbox"></th>
+          <th class="col-date">日付</th>
+          <th class="col-category">カテゴリ</th>
+          <th class="col-amount">金額</th>
+          <th>メモ</th>
+          <th class="col-actions">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="selected">
+          <td class="col-handle"><span class="handle" title="ドラッグで並び替え">⠿</span></td>
+          <td class="col-check"><input type="checkbox" checked></td>
+          <td>09/25</td>
+          <td>食費</td>
+          <td class="col-amount"><span class="amount expense">-1,280</span></td>
+          <td class="memo">スーパーで買い物</td>
+          <td class="col-actions">
+            <button class="btn-icon" title="編集">✎</button>
+            <button class="btn-icon" title="削除">🗑</button>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-handle"><span class="handle">⠿</span></td>
+          <td class="col-check"><input type="checkbox"></td>
+          <td>09/25</td>
+          <td>給与</td>
+          <td class="col-amount"><span class="amount income">+250,000</span></td>
+          <td class="memo">9月分</td>
+          <td class="col-actions">
+            <button class="btn-icon" title="編集">✎</button>
+            <button class="btn-icon" title="削除">🗑</button>
+          </td>
+        </tr>
+        <tr class="selected">
+          <td class="col-handle"><span class="handle">⠿</span></td>
+          <td class="col-check"><input type="checkbox" checked></td>
+          <td>09/24</td>
+          <td>交通費</td>
+          <td class="col-amount"><span class="amount expense">-820</span></td>
+          <td class="memo">定期外の電車賃</td>
+          <td class="col-actions">
+            <button class="btn-icon" title="編集">✎</button>
+            <button class="btn-icon" title="削除">🗑</button>
+          </td>
+        </tr>
+        <tr class="selected">
+          <td class="col-handle"><span class="handle">⠿</span></td>
+          <td class="col-check"><input type="checkbox" checked></td>
+          <td>09/23</td>
+          <td>日用品</td>
+          <td class="col-amount"><span class="amount expense">-2,200</span></td>
+          <td class="memo">洗剤とティッシュ</td>
+          <td class="col-actions">
+            <button class="btn-icon" title="編集">✎</button>
+            <button class="btn-icon" title="削除">🗑</button>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-handle"><span class="handle">⠿</span></td>
+          <td class="col-check"><input type="checkbox"></td>
+          <td>09/20</td>
+          <td>水道光熱費</td>
+          <td class="col-amount"><span class="amount expense">-9,800</span></td>
+          <td class="memo">電気代 8月分</td>
+          <td class="col-actions">
+            <button class="btn-icon" title="編集">✎</button>
+            <button class="btn-icon" title="削除">🗑</button>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-handle"><span class="handle">⠿</span></td>
+          <td class="col-check"><input type="checkbox"></td>
+          <td>09/15</td>
+          <td>住居費</td>
+          <td class="col-amount"><span class="amount expense">-70,200</span></td>
+          <td class="memo">家賃</td>
+          <td class="col-actions">
+            <button class="btn-icon" title="編集">✎</button>
+            <button class="btn-icon" title="削除">🗑</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

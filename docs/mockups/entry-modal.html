@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家計簿 — 追加・編集モーダル（S-02）モックアップ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p class="mock-note">
+  モックアップ: <strong>S-02 追加・編集モーダル</strong>（<a href="../screens.md">screens.md</a>）。
+  背後は一覧画面（<a href="index.html">index.html</a>）。金額欄はバリデーションエラーの表示例です。
+</p>
+
+<div class="app">
+  <div class="header">
+    <h1>家計簿</h1>
+    <button class="btn btn-primary">＋ 追加</button>
+  </div>
+
+  <div class="card summary">
+    <div class="summary-item">
+      <div class="label">収入</div>
+      <div class="value income">250,000</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">支出</div>
+      <div class="value expense">84,300</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">差額</div>
+      <div class="value">165,700</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-handle"></th>
+          <th class="col-check"><input type="checkbox"></th>
+          <th class="col-date">日付</th>
+          <th class="col-category">カテゴリ</th>
+          <th class="col-amount">金額</th>
+          <th>メモ</th>
+          <th class="col-actions">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-handle"><span class="handle">⠿</span></td>
+          <td class="col-check"><input type="checkbox"></td>
+          <td>09/25</td>
+          <td>食費</td>
+          <td class="col-amount"><span class="amount expense">-1,280</span></td>
+          <td class="memo">スーパーで買い物</td>
+          <td class="col-actions">
+            <button class="btn-icon">✎</button>
+            <button class="btn-icon">🗑</button>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-handle"><span class="handle">⠿</span></td>
+          <td class="col-check"><input type="checkbox"></td>
+          <td>09/25</td>
+          <td>給与</td>
+          <td class="col-amount"><span class="amount income">+250,000</span></td>
+          <td class="memo">9月分</td>
+          <td class="col-actions">
+            <button class="btn-icon">✎</button>
+            <button class="btn-icon">🗑</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- S-02 追加・編集モーダル -->
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>収支を追加</h2>
+      <button class="btn-icon" title="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>日付<span class="required">必須</span></label>
+        <input type="date" value="2026-09-25">
+      </div>
+      <div class="field">
+        <label>カテゴリ<span class="required">必須</span></label>
+        <select>
+          <option value="">選択してください</option>
+          <optgroup label="支出">
+            <option selected>食費</option>
+            <option>日用品</option>
+            <option>交通費</option>
+            <option>住居費</option>
+            <option>水道光熱費</option>
+            <option>通信費</option>
+            <option>娯楽費</option>
+            <option>医療費</option>
+            <option>その他</option>
+          </optgroup>
+          <optgroup label="収入">
+            <option>給与</option>
+            <option>賞与</option>
+            <option>副収入</option>
+            <option>その他収入</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field">
+        <label>金額<span class="required">必須</span></label>
+        <input type="number" class="invalid" value="0">
+        <span class="field-error">金額は1以上の整数で入力してください</span>
+      </div>
+      <div class="field">
+        <label>メモ</label>
+        <input type="text" placeholder="任意・200文字以内">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">キャンセル</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
