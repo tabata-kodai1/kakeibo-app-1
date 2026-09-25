@@ -170,7 +170,7 @@ WHERE entry_date >= '2026-09-01' AND entry_date < '2026-10-01'
 
 | API | 主な DB 操作 |
 | --- | --- |
-| `GET /api/summary` | `entries` を対象月で絞り、`categories` と結合して `category_type` 別に合計。カテゴリ別は `GROUP BY category_id`。あわせて `budgets` を `year_month` で 1 行取得 |
+| `GET /api/summary` | `entries` を対象月で絞り、`categories` と結合して `category_type` 別に合計。カテゴリ別は `GROUP BY category_id`。対象月の総件数を `COUNT` で取得（`entry_count`）。あわせて `budgets` を `year_month` で 1 行取得 |
 | `GET /api/entries` | `entries` と `categories` を結合し、月・検索条件で絞り込んで `entry_date` 降順で取得 |
 | `GET /api/categories` | `categories` を `category_type`, `id` 順で全件取得 |
 | `POST /api/entries` | 1 行 INSERT |
