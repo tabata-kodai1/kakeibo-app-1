@@ -89,10 +89,19 @@ run "${SSH[@]}" 'sudo cloud-init status --wait'
 
 # ソースはコミット済みのものだけを標準入力で送る。master.key など Git 管理外のファイルは届かない。
 # 1GB 程度のメモリでのビルドは、初期化スクリプトで確保したスワップに頼る。
+# 標準入力の tar を docker build の文脈にする方式（docker build -）は、BuildKit で
+# 「no http response from session」となり失敗した。EC2 上のディレクトリに展開してからビルドする。
+SRC_DIR='$HOME/kakeibo-src'
 if [ "$DRY_RUN" -eq 1 ]; then
-  printf '  [dry-run] git archive --format=tar HEAD:backend | ssh ... docker build -t %s -\n' "$IMAGE"
+  printf '  [dry-run] git archive --format=tar HEAD:backend | ssh ... tar -x -C %s\n' "$SRC_DIR"
+  printf '  [dry-run] ssh ... docker build -t %s %s\n' "$IMAGE" "$SRC_DIR"
 else
-  git archive --format=tar HEAD:backend | "${SSH[@]}" "docker build -t ${IMAGE} -"
+  # core.autocrlf=false を明示する。HEAD:backend はサブツリーだけを対象にし、ルートの
+  # .gitattributes（eol=lf）を読まない。Windows の autocrlf=true が効くと bin/ のスクリプトが
+  # CRLF になり、shebang が壊れてコンテナが起動しない（「bash: -: invalid option」）。
+  git -c core.autocrlf=false archive --format=tar HEAD:backend \
+    | "${SSH[@]}" "rm -rf ${SRC_DIR} && mkdir -p ${SRC_DIR} && tar -x -C ${SRC_DIR}"
+  "${SSH[@]}" "docker build -t ${IMAGE} ${SRC_DIR} && rm -rf ${SRC_DIR}"
 fi
 
 # 旧コンテナを止めて入れ替える。数分の停止を許容する（N-38）。

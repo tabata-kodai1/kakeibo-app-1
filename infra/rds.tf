@@ -47,8 +47,9 @@ resource "aws_db_instance" "main" {
   publicly_accessible    = false
   multi_az               = false
 
-  # 自動バックアップを有効にする（N-40）。保持期間は既定値と同じ 7 日を明示する。
-  backup_retention_period = 7
+  # 自動バックアップを有効にする（N-40）。保持期間は既定値（RDS API の既定は 1 日）のままとし、
+  # 0（無効）と取り違えられないよう明示する。無料プランのアカウントは 1 日までしか指定できない。
+  backup_retention_period = 1
 
   # terraform destroy で確実に撤去できるようにする（手順9）。
   # 本番運用なら true にして最終スナップショットを取るところだが、学習用途の検証環境のため取らない。
