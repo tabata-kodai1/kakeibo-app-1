@@ -369,10 +369,18 @@ Rails の `config/master.key`、RDS のパスワードを含む `.tfvars`、`.en
 
 | 変数 | 用途 | 対応 |
 | --- | --- | --- |
-| `DATABASE_URL` | DB の接続先。ローカルは compose の `db`、本番は RDS のエンドポイント | N-11 |
+| `DATABASE_URL` | DB の接続先。ローカルは compose の `db`、本番は RDS のエンドポイント。スキームは `mysql2://`（後述） | N-11 |
 | `ALLOWED_ORIGINS` | `rack-cors` の許可オリジン。本番は S3 の静的サイトドメインのみを指定し、ワイルドカードは使わない | [N-12](./non-functional.md#セキュリティ) |
 | `RAILS_MASTER_KEY` | 本番の credentials 復号用 | N-11 |
 | `RAILS_LOG_TO_STDOUT` | ログを標準出力に出す | [N-19](./non-functional.md#保守性運用) |
+
+`DATABASE_URL` のスキームは **`mysql2://`** とする。`mysql://` ではない。Rails は URL のスキームでアダプタ名を決めており、それが gem 名（`mysql2`）と一致するため。PostgreSQL の `postgres://` から書き換えるときに間違えやすく、誤ると起動時に接続エラーになる。
+
+```
+mysql2://<user>:<password>@<host>:3306/<database>
+```
+
+ローカル（compose の `db`）でも本番（RDS のエンドポイント）でも、ホスト名が変わるだけで書式は同じ。
 
 ### アプリケーション設定
 

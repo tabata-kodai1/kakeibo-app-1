@@ -11,6 +11,13 @@ MySQL 固有の型の選択:
 | `DATETIME(6)`（`TIMESTAMP` ではなく） | `TIMESTAMP` は 2038 年で上限に達する。Rails の `t.timestamps` も MySQL では `datetime(6)` を生成する |
 | `utf8mb4_0900_ai_ci` | `ci`（case-insensitive）により、メモのキーワード検索（[F-08](./features.md#f-08-検索絞り込み)）の「大文字小文字を区別しない部分一致」が `LIKE` だけで成立する |
 
+**`ci` は検索だけでなく、比較全般に効く。** PostgreSQL は既定で大文字小文字を区別するため、ここは挙動が変わる箇所になる。
+
+| 影響する箇所 | 起きること | 対応 |
+| --- | --- | --- |
+| `categories` のチェック制約 `category_type IN ('INCOME', 'EXPENSE')` | `income` のような小文字も通る。収支区分の表記ゆれを DB 側では防げない | `Category` モデルの `inclusion` バリデーションで担保する（[plan.md フェーズ2](./plan.md#フェーズ2-db) の作業 4） |
+| `(name, category_type)` の一意制約 | 英字のカテゴリ名で `Food` と `food` が重複と判定される | 初期データは日本語で、カテゴリの追加機能も持たないため実害がない。この挙動のまま受け入れる |
+
 認証なし・単一ユーザーのため、ユーザーを表すテーブルは持たない（[requirements.md](./requirements.md#22-対象外作らないもの) 参照）。
 
 ## ER 図
