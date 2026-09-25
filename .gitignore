@@ -16,6 +16,17 @@ node_modules/
 .terraform/
 *.tfstate
 *.tfstate.*
+# plan ファイルには sensitive な値（RDS パスワード）が平文で入る
+*.tfplan
+tfplan
+# backend の設定値（バケット名にアカウント ID が入る）
+backend.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # ログ・一時ファイル
 *.log
