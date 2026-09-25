@@ -1,0 +1,3 @@
+# 改行は LF に統一する。bin/ のスクリプトは Linux のコンテナと EC2 上で
+# 実行されるため、CRLF が混ざると shebang が壊れて起動しない。
+* text=auto eol=lf

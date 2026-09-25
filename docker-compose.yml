@@ -32,7 +32,11 @@ services:
     logging: *default-logging
 
   api:
-    build: ./backend
+    build:
+      context: ./backend
+      # 生成物の Dockerfile は本番用（production・development の gem を含まない）。
+      # ローカルは開発用の定義を使う
+      dockerfile: Dockerfile.dev
     command: ./bin/rails server -b 0.0.0.0 -p 3000
     environment:
       DATABASE_URL: ${DATABASE_URL}
