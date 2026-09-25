@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   namespace :api, defaults: { format: :json } do
     resources :entries, only: :index
     resources :categories, only: :index
+    resource :summary, only: :show
 
     # 該当するルートがない /api/* は 404 の JSON で返す
     match "*unmatched", to: "errors#not_found", via: :all
