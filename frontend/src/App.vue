@@ -1,22 +1,30 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import CategoryBreakdown from './components/CategoryBreakdown.vue'
+import MonthNav from './components/MonthNav.vue'
+import SummaryPanel from './components/SummaryPanel.vue'
+import { getDummySummary } from './data/dummySummaries'
+import { currentMonth, shiftMonth } from './utils/format'
 
-// 画面の実装はフェーズ4から。ここでは proxy 経由で Rails に届くことだけを確かめる。
-const health = ref('確認中…')
-
-onMounted(async () => {
-  try {
-    const res = await fetch('/api/health')
-    health.value = `${res.status} ${await res.text()}`
-  } catch (e) {
-    health.value = `失敗: ${String(e)}`
-  }
-})
+// フェーズ4: API には繋がず、ダミーデータで組む（docs/plan.md）。
+// 状態管理ライブラリは入れず、ref / computed で持つ（docs/tech-stack.md）
+const month = ref(currentMonth())
+const summary = computed(() => getDummySummary(month.value))
 </script>
 
 <template>
-  <main>
-    <h1>kakeibo-app-1</h1>
-    <p>GET /api/health → {{ health }}</p>
-  </main>
+  <div class="app">
+    <div class="header">
+      <h1>家計簿</h1>
+    </div>
+
+    <MonthNav
+      :month="month"
+      @prev="month = shiftMonth(month, -1)"
+      @next="month = shiftMonth(month, 1)"
+    />
+    <!-- 予算設定モーダル（S-04）は別の Issue で作る。ボタンは表示のみ -->
+    <SummaryPanel :summary="summary" />
+    <CategoryBreakdown :categories="summary.categories" />
+  </div>
 </template>
