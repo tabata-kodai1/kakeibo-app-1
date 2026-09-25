@@ -8,6 +8,10 @@ class Entry < ApplicationRecord
   # 空白のみの入力は未入力として扱い null で保存する
   normalizes :memo, with: ->(memo) { memo.match?(/\A[[:space:]]*\z/) ? nil : memo }
 
+  scope :in_month, ->(month) { where(entry_date: month.range) }
+  # 新しい記録が上。同日なら id の降順（docs/features.md「レコードの JSON 表現」）
+  scope :newest_first, -> { order(entry_date: :desc, id: :desc) }
+
   validates :entry_date, presence: { message: "日付を入力してください" }
   validates :category_id, presence: { message: "カテゴリを選択してください" }
   validate :category_must_exist

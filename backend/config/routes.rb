@@ -9,6 +9,14 @@ Rails.application.routes.draw do
   # 本番の API は /api 配下に置くため、この 1 本も同じ前置きにそろえている。
   get "api/health" => "health#show"
 
+  namespace :api, defaults: { format: :json } do
+    resources :entries, only: :index
+    resources :categories, only: :index
+
+    # 該当するルートがない /api/* は 404 の JSON で返す
+    match "*unmatched", to: "errors#not_found", via: :all
+  end
+
   # Defines the root path route ("/")
   # root "posts#index"
 end
