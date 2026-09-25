@@ -35,7 +35,6 @@ flowchart LR
 | フロントエンドFW | Vue | 3 系（Composition API） |
 | ビルドツール | Vite | 最新安定版 |
 | HTTPクライアント | fetch（標準API） | - |
-| ドラッグ&ドロップ | vuedraggable（SortableJS） | 最新安定版 |
 | ローカル実行 | Docker Compose | - |
 | インフラ | Terraform + AWS（EC2 / RDS / S3） | Terraform 1.x 系 |
 
@@ -57,15 +56,25 @@ Rails を選ぶ実務上の理由:
 
 Rails 標準であり、他の選択肢を積極的に採る理由がない。今回の要件との相性も良い。
 
-**一括更新（[F-06](./features.md#f-06-一括更新)）が 1 文の UPDATE で書ける:**
+**一括更新（[F-09](./features.md#f-09-一括更新)）が 1 文の UPDATE で書ける:**
 
 ```ruby
 Entry.where(id: ids).update_all(category_id: category_id, updated_at: Time.current)
 ```
 
-同様に、**並び替え（[F-05](./features.md#f-05-レコード更新と並び替えドラッグドロップ)）** も 1 トランザクションでまとめて更新できる。
+この更新を `transaction` で囲めば、「1 件でも対象外 ID があれば全件更新しない」という F-09 の受け入れ条件も素直に満たせる。
 
-**動的な検索条件（[F-03](./features.md#f-03-検索絞り込み)）** も、スコープをつなぐだけで書ける:
+**月次の集計（[F-01](./features.md#f-01-月次サマリー), [F-03](./features.md#f-03-カテゴリ別集計)）** も、集計メソッドで短く書ける:
+
+```ruby
+Entry.joins(:category)
+     .where(entry_date: range)
+     .where(categories: { type: "EXPENSE" })
+     .group(:category_id)
+     .sum(:amount)
+```
+
+**動的な検索条件（[F-08](./features.md#f-08-検索絞り込み)）** も、スコープをつなぐだけで書ける:
 
 ```ruby
 scope = Entry.includes(:category)
@@ -82,7 +91,7 @@ scope = scope.where("memo ILIKE ?", "%#{keyword}%") if keyword.present?
 ### データベース: PostgreSQL 16
 
 課題の指定 DBMS。ローカルは Docker Compose、本番は RDS で同一メジャーバージョンを使い、環境差をなくす。
-メモのキーワード検索（F-03）で、大文字小文字を区別しない部分一致に `ILIKE` をそのまま使える。
+メモのキーワード検索（F-08）で、大文字小文字を区別しない部分一致に `ILIKE` をそのまま使える。
 
 ### フロントエンド: Vue 3 + TypeScript + Vite
 
@@ -97,22 +106,17 @@ React を避けつつ SPA を作る前提での選択。
 
 ### 構成: API 分離型（Rails API + Vue の SPA）
 
-Rails には Hotwire を使ったフルスタック構成もあるが、**手順2で作成した設計（JSON API 7本・S3 静的配信・画面構成）をそのまま流用できる**ことを優先して、API 分離型を選んだ。設計の考え方を維持したまま、実装技術だけを入れ替える形になる。
+Rails には Hotwire を使ったフルスタック構成もあるが、**手順2で作成した設計（JSON API・S3 静的配信・画面構成）をそのまま流用できる**ことを優先して、API 分離型を選んだ。設計の考え方を維持したまま、実装技術だけを入れ替える形になる。
 
 ### HTTPクライアント: 標準の fetch
 
-使う API は 7 本だけで、axios のインターセプタ等の機能を必要としない。API 呼び出しは `src/api/` に薄いラッパ関数としてまとめ、エラーレスポンスの解釈をそこに集約する。
-
-### ドラッグ&ドロップ: vuedraggable（SortableJS）
-
-[F-05](./features.md#f-05-レコード更新と並び替えドラッグドロップ) の行並び替えに使う。HTML5 Drag and Drop API を直接使うとブラウザ差やドラッグ中の表示制御を自前で扱うことになり、要件（移動先が視覚的に分かること）の実装量が増える。
-vuedraggable は SortableJS の Vue ラッパで、テーブル行の並び替えに対応し、ドラッグ中のプレビュー表示も標準で備える。
+使う API は 8 本だけで、axios のインターセプタ等の機能を必要としない。API 呼び出しは `src/api/` に薄いラッパ関数としてまとめ、エラーレスポンスの解釈をそこに集約する。
 
 ### テスト: RSpec + FactoryBot（リクエストスペック）
 
 - Rails 標準は minitest だが、**実務では RSpec の採用率が高い**ため、学習の機会として RSpec を選ぶ
 - `describe` / `context` / `it` の構造が、[features.md](./features.md) の受け入れ条件の書き方とそのまま対応する。受け入れ条件を 1 つずつ `it` に落とせる
-- テスト対象は **API のリクエストスペック**とする。HTTP リクエストを投げてレスポンスと DB の状態を検証する形で、F-01〜F-07 の受け入れ条件を端から端まで確認できる
+- テスト対象は **API のリクエストスペック**とする。HTTP リクエストを投げてレスポンスと DB の状態を検証する形で、F-01〜F-09 の受け入れ条件を端から端まで確認できる
 - フロントエンドは手動確認とする。新しい技術が多いため、テストの範囲を広げるより実装の完走を優先する
 
 ### ローカル実行: Docker Compose
@@ -137,11 +141,13 @@ ECS や ALB は使わない。常時稼働・冗長化が要件外のため、�
 | --- | --- |
 | Java + Spring Boot | 既習のため、新しい言語を学ぶという今回の目的に合わない |
 | React | 同上 |
-| Rails + Hotwire | Rails 公式の正攻法だが、JSON API を作らない構成のため、手順2で作成した features.md の API 仕様を丸ごと書き直すことになる。また複数選択（F-06）のクライアント状態管理を Stimulus で手書きすることになる |
+| Rails + Hotwire | Rails 公式の正攻法だが、JSON API を作らない構成のため、手順2で作成した features.md の API 仕様を丸ごと書き直すことになる。また複数選択（F-09）のクライアント状態管理を Stimulus で手書きすることになる |
 | Inertia.js + Vue | API を作らずに Vue を使える中間案だが、日本語の情報が少なく、Ruby と Vue を同時に学ぶ今回は調べ物の負担が大きい |
 | Svelte | 記述量は最小だが、日本語の情報が Vue より明らかに少ない |
 | Sinatra | Ruby 言語自体に集中できるが、マイグレーション・バリデーション・テスト基盤を自分で用意することになり、AWS まで含む本課題では負担が大きい |
 | minitest | Rails 標準だが、実務での露出は RSpec より少ない |
+| vuedraggable / SortableJS | 当初はドラッグ&ドロップによる並び替えのために採用予定だったが、機能そのものを対象外としたため不要になった（[requirements.md の対象外](./requirements.md#22-対象外作らないもの)） |
+| グラフ描画ライブラリ（Chart.js など） | カテゴリ別の内訳は、金額・割合・横棒バーを CSS で表現すれば把握できる。ライブラリの習得コストに見合わない |
 | Pinia（状態管理） | 共有すべき状態が少なく、導入コストに見合わない |
 | axios | fetch で足りる範囲しか使わない |
 | ECS / Fargate + ALB | 学習用途の単一環境に対して構成要素が多く、コストも上がる |
@@ -151,7 +157,7 @@ ECS や ALB は使わない。常時稼働・冗長化が要件外のため、�
 **収支レコードのモデル名は `Entry`（テーブル名 `entries`）とする。** Rails では `record` が「DB の 1 行」を指す一般名詞として多用される（`ActiveRecord::RecordNotFound`、カスタムバリデータの `record` 引数など）ため、自作モデルを `Record` にすると自分のモデルの話か Rails の用語かの区別がつきにくく、エラー調査時にも検索しづらい。
 日本語のドキュメント上の用語は「収支レコード」のまま維持する（[requirements.md の用語定義](./requirements.md#3-用語定義)）。
 
-**API の JSON キーは snake_case** とする（`entry_date`、`category_id`、`sort_order`）。Rails の属性名がそのまま JSON キーになるため、キー名の変換処理を書かずに済む。Vue 側も同じキー名で型定義する。
+**API の JSON キーは snake_case** とする（`entry_date`、`category_id`、`year_month`）。Rails の属性名がそのまま JSON キーになるため、キー名の変換処理を書かずに済む。Vue 側も同じキー名で型定義する。
 
 ## 開発環境の前提
 

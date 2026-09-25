@@ -12,7 +12,9 @@
   --expense: #d13b3b;
   --income: #1f8b4c;
   --danger: #d13b3b;
+  --warning: #c77700;
   --selected-bg: #eaf1fe;
+  --track: #e8ebef;
   --radius: 6px;
 }
 
@@ -27,7 +29,7 @@ body {
   line-height: 1.6;
 }
 
-.app { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+.app { max-width: 880px; margin: 0 auto; padding: 24px 16px 64px; }
 
 /* ヘッダ */
 .header {
@@ -49,6 +51,7 @@ body {
   cursor: pointer;
 }
 .btn:hover { background: #f0f2f5; }
+.btn-sm { padding: 4px 10px; font-size: 13px; }
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -75,16 +78,126 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 16px;
+  padding: 14px 18px;
   margin-bottom: 12px;
 }
+.card-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
 
-/* 集計バー */
-.summary { display: flex; gap: 40px; }
-.summary-item .label { color: var(--text-muted); font-size: 12px; }
-.summary-item .value { font-size: 20px; font-weight: 600; }
-.value.income { color: var(--income); }
-.value.expense { color: var(--expense); }
+/* 月切替 */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+.month-nav .current {
+  font-size: 18px;
+  font-weight: 600;
+  min-width: 140px;
+  text-align: center;
+}
+.month-nav button {
+  font: inherit;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 4px 12px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.month-nav button:hover { background: #f0f2f5; color: var(--text); }
+
+/* サマリー（画面の主役） */
+.summary { padding: 20px 24px 24px; }
+.summary-head {
+  display: flex;
+  align-items: baseline;
+  gap: 28px;
+  margin-bottom: 12px;
+}
+.summary-head .item .label { font-size: 12px; color: var(--text-muted); }
+.summary-head .item .value {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.summary-head .spacer { margin-left: auto; }
+
+.progress {
+  height: 12px;
+  background: var(--track);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+}
+.progress.over .fill { background: var(--danger); }
+.progress-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-bottom: 18px;
+}
+
+.remaining {
+  text-align: center;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.remaining .label { font-size: 13px; color: var(--text-muted); }
+.remaining .value {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.remaining .value .unit { font-size: 20px; font-weight: 600; margin-left: 4px; }
+.remaining.over .value { color: var(--danger); }
+.remaining .note { font-size: 12px; color: var(--text-muted); }
+.remaining.over .note { color: var(--danger); }
+
+/* カテゴリ別集計 */
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 90px 80px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 0;
+}
+.breakdown-row .cat { color: var(--text); }
+.breakdown-row .amt {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.breakdown-row .bar {
+  height: 8px;
+  background: var(--track);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.breakdown-row .bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+}
+.breakdown-row .pct {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
 
 /* 検索バー */
 .search { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
@@ -112,7 +225,16 @@ input[type="text"], input[type="date"], input[type="number"], select {
 .bulk-bar .count { font-weight: 600; }
 .bulk-bar .spacer { margin-left: auto; }
 
-/* テーブル */
+/* 明細 */
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.list-head .count { font-size: 13px; color: var(--text-muted); }
+.list-head .actions { display: flex; gap: 8px; }
+
 .table-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -136,25 +258,20 @@ tbody tr:hover { background: #fafbfc; }
 tr.selected { background: var(--selected-bg); }
 tr.selected:hover { background: #e0ebfd; }
 
-.col-handle { width: 32px; }
 .col-check { width: 36px; }
-.col-date { width: 110px; }
-.col-category { width: 140px; }
-.col-amount { width: 130px; text-align: right; }
-.col-actions { width: 90px; text-align: right; }
+.col-date { width: 90px; }
+.col-category { width: 130px; }
+.col-amount { width: 120px; text-align: right; }
+.col-actions { width: 80px; text-align: right; }
 td.col-amount { text-align: right; }
 td.col-actions { text-align: right; }
-
-.handle { cursor: grab; color: #b3bac4; user-select: none; }
-.handle:hover { color: var(--text-muted); }
-.handle.disabled { cursor: not-allowed; opacity: .4; }
 
 .amount { font-variant-numeric: tabular-nums; font-weight: 600; }
 .amount.expense { color: var(--expense); }
 .amount.income { color: var(--income); }
 
 .memo {
-  max-width: 320px;
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -163,7 +280,7 @@ td.col-actions { text-align: right; }
 
 /* 空表示・ローディング・エラー */
 .empty, .loading {
-  padding: 48px 0;
+  padding: 40px 0;
   text-align: center;
   color: var(--text-muted);
 }
@@ -206,6 +323,7 @@ td.col-actions { text-align: right; }
 .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 .modal-body .field label { font-size: 13px; color: var(--text); }
 .modal-body input, .modal-body select { width: 100%; }
+.modal-body .hint { font-size: 12px; color: var(--text-muted); }
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -219,7 +337,7 @@ input.invalid, select.invalid { border-color: var(--danger); }
 
 /* モックアップ注記 */
 .mock-note {
-  max-width: 1100px;
+  max-width: 880px;
   margin: 0 auto 4px;
   padding: 8px 16px;
   font-size: 12px;

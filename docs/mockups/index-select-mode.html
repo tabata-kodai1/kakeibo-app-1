@@ -3,16 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>家計簿 — ダッシュボード（S-01 通常モード）モックアップ</title>
+<title>家計簿 — ダッシュボード（S-01 選択モード）モックアップ</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <p class="mock-note">
-  モックアップ: <strong>S-01 ダッシュボード（通常モード）</strong>（<a href="../screens.md">screens.md</a>）。
-  静的HTMLのため操作はできません。
-  他の画面: <a href="index-select-mode.html">選択モード</a> /
-  <a href="entry-modal.html">収支入力モーダル</a> /
-  <a href="budget-modal.html">予算設定モーダル</a>
+  モックアップ: <strong>S-01 ダッシュボード（選択モード）</strong>（<a href="../screens.md">screens.md</a>）。
+  「選択」ボタンを押した状態。チェックボックスと一括操作バーが現れ、行ごとの編集・削除ボタンは隠れる。
+  通常モードは <a href="index.html">index.html</a>。
 </p>
 
 <div class="app">
@@ -21,14 +19,13 @@
     <h1>家計簿</h1>
   </div>
 
-  <!-- 月切替 -->
   <div class="month-nav">
     <button>◀ 前月</button>
     <span class="current">2026年9月</span>
     <button>翌月 ▶</button>
   </div>
 
-  <!-- サマリー（画面の主役） -->
+  <!-- サマリー・内訳・検索バーは通常モードと同じ（省略せず表示） -->
   <div class="card summary">
     <div class="summary-head">
       <div class="item">
@@ -55,7 +52,6 @@
     </div>
   </div>
 
-  <!-- カテゴリ別集計 -->
   <div class="card">
     <div class="card-title">支出の内訳</div>
     <div class="breakdown-row">
@@ -84,120 +80,80 @@
     </div>
   </div>
 
-  <!-- 検索バー -->
-  <div class="card search">
-    <div class="field">
-      <label>カテゴリ</label>
-      <select>
-        <option>すべて</option>
-        <optgroup label="支出">
-          <option>食費</option>
-          <option>日用品</option>
-          <option>交通費</option>
-        </optgroup>
-        <optgroup label="収入">
-          <option>給与</option>
-        </optgroup>
-      </select>
-    </div>
-    <div class="field">
-      <label>キーワード</label>
-      <input type="text" placeholder="メモを検索">
-    </div>
-    <div class="field">
-      <label>期間（月をまたいで検索）</label>
-      <div class="range">
-        <input type="date">
-        <span>〜</span>
-        <input type="date">
-      </div>
-    </div>
-    <div class="search-actions">
-      <button class="btn btn-primary">検索</button>
-      <button class="btn">クリア</button>
-    </div>
+  <!-- 一括操作バー（選択モードのみ） -->
+  <div class="card bulk-bar">
+    <span class="count">2件選択中</span>
+    <select>
+      <option>カテゴリを変更…</option>
+      <optgroup label="支出">
+        <option>食費</option>
+        <option>日用品</option>
+      </optgroup>
+      <optgroup label="収入">
+        <option>給与</option>
+      </optgroup>
+    </select>
+    <input type="date">
+    <button class="btn">適用</button>
+    <span class="spacer"></span>
+    <button class="btn btn-danger">削除</button>
+    <button class="btn">完了</button>
   </div>
 
-  <!-- 明細一覧 -->
-  <div class="list-head">
-    <span class="count">明細 6件</span>
-    <span class="actions">
-      <button class="btn btn-primary btn-sm">＋ 追加</button>
-      <button class="btn btn-sm">選択</button>
-    </span>
-  </div>
-
+  <!-- 明細一覧（選択モード） -->
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
+          <th class="col-check"><input type="checkbox"></th>
           <th class="col-date">日付</th>
           <th class="col-category">カテゴリ</th>
           <th class="col-amount">金額</th>
           <th>メモ</th>
-          <th class="col-actions">操作</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
+        <tr class="selected">
+          <td class="col-check"><input type="checkbox" checked></td>
           <td>09/25</td>
           <td>食費</td>
           <td class="col-amount"><span class="amount expense">-1,280</span></td>
           <td class="memo">スーパーで買い物</td>
-          <td class="col-actions">
-            <button class="btn-icon" title="編集">✎</button>
-            <button class="btn-icon" title="削除">🗑</button>
-          </td>
         </tr>
         <tr>
+          <td class="col-check"><input type="checkbox"></td>
           <td>09/25</td>
           <td>給与</td>
           <td class="col-amount"><span class="amount income">+250,000</span></td>
           <td class="memo">9月分</td>
-          <td class="col-actions">
-            <button class="btn-icon" title="編集">✎</button>
-            <button class="btn-icon" title="削除">🗑</button>
-          </td>
         </tr>
-        <tr>
+        <tr class="selected">
+          <td class="col-check"><input type="checkbox" checked></td>
           <td>09/24</td>
           <td>交通費</td>
           <td class="col-amount"><span class="amount expense">-820</span></td>
           <td class="memo">定期外の電車賃</td>
-          <td class="col-actions">
-            <button class="btn-icon" title="編集">✎</button>
-            <button class="btn-icon" title="削除">🗑</button>
-          </td>
         </tr>
         <tr>
+          <td class="col-check"><input type="checkbox"></td>
           <td>09/23</td>
           <td>日用品</td>
           <td class="col-amount"><span class="amount expense">-2,200</span></td>
           <td class="memo">洗剤とティッシュ</td>
-          <td class="col-actions">
-            <button class="btn-icon" title="編集">✎</button>
-            <button class="btn-icon" title="削除">🗑</button>
-          </td>
         </tr>
         <tr>
+          <td class="col-check"><input type="checkbox"></td>
           <td>09/20</td>
           <td>娯楽費</td>
           <td class="col-amount"><span class="amount expense">-8,000</span></td>
           <td class="memo">映画と食事</td>
-          <td class="col-actions">
-            <button class="btn-icon" title="編集">✎</button>
-            <button class="btn-icon" title="削除">🗑</button>
-          </td>
         </tr>
         <tr>
+          <td class="col-check"><input type="checkbox"></td>
           <td>09/15</td>
           <td>食費</td>
           <td class="col-amount"><span class="amount expense">-30,820</span></td>
           <td class="memo">まとめ買い</td>
-          <td class="col-actions">
-            <button class="btn-icon" title="編集">✎</button>
-            <button class="btn-icon" title="削除">🗑</button>
-          </td>
         </tr>
       </tbody>
     </table>

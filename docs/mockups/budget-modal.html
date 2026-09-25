@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家計簿 — 予算設定モーダル（S-04）モックアップ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p class="mock-note">
+  モックアップ: <strong>S-04 予算設定モーダル</strong>（<a href="../screens.md">screens.md</a>）。
+  背後はダッシュボード（<a href="index.html">index.html</a>）。
+  背後のサマリーは<strong>予算超過時の表示例</strong>にしてある（残額が警告色、進捗バーが赤）。
+</p>
+
+<div class="app">
+  <div class="header">
+    <h1>家計簿</h1>
+  </div>
+
+  <div class="month-nav">
+    <button>◀ 前月</button>
+    <span class="current">2026年9月</span>
+    <button>翌月 ▶</button>
+  </div>
+
+  <!-- 予算超過時のサマリー表示例 -->
+  <div class="card summary">
+    <div class="summary-head">
+      <div class="item">
+        <div class="label">予算</div>
+        <div class="value">80,000</div>
+      </div>
+      <div class="item">
+        <div class="label">使用</div>
+        <div class="value">92,400</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm">予算を設定</button>
+    </div>
+
+    <div class="progress over">
+      <div class="fill" style="width: 100%"></div>
+    </div>
+    <div class="progress-label">116% 使用</div>
+
+    <div class="remaining over">
+      <div class="label">超過</div>
+      <div class="value">-12,400<span class="unit">円</span></div>
+      <div class="note">予算を12,400円超えています</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">支出の内訳</div>
+    <div class="breakdown-row">
+      <span class="cat">住居費</span>
+      <span class="amt">70,200</span>
+      <span class="bar"><span style="width: 76%"></span></span>
+      <span class="pct">76%</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="cat">食費</span>
+      <span class="amt">14,200</span>
+      <span class="bar"><span style="width: 15%"></span></span>
+      <span class="pct">15%</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="cat">交通費</span>
+      <span class="amt">8,000</span>
+      <span class="bar"><span style="width: 9%"></span></span>
+      <span class="pct">9%</span>
+    </div>
+  </div>
+</div>
+
+<!-- S-04 予算設定モーダル -->
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>2026年9月の予算</h2>
+      <button class="btn-icon" title="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>予算額<span class="required">必須</span></label>
+        <input type="number" value="80000">
+      </div>
+      <p class="hint">この月に使ってよい支出の上限額を設定します。収入は残額の計算に含まれません。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">キャンセル</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -7,7 +7,7 @@
 | --- | --- | --- |
 | [1](#フェーズ1-初期化) | 初期化 | 1 |
 | [2](#フェーズ2-db) | DB | 1 |
-| [3](#フェーズ3-api) | API | 7（F-01〜F-07） |
+| [3](#フェーズ3-api) | API | 7 |
 | [4](#フェーズ4-画面) | 画面 | 3 |
 | [5](#フェーズ5-結合) | 結合 | 2 |
 | [6](#フェーズ6-aws) | AWS | 4 |
@@ -53,55 +53,61 @@
 | --- | --- | --- |
 | 1 | `categories` テーブルのマイグレーション | [database.md](./database.md#categoriesカテゴリ) |
 | 2 | `entries` テーブルのマイグレーション（外部キー・チェック制約・インデックス含む） | [database.md](./database.md#entries収支レコード) |
-| 3 | `Category` モデル（`has_many :entries`、`type` の enum とバリデーション） | 同上 |
-| 4 | `Entry` モデル（`belongs_to :category`、各項目のバリデーション） | [features.md のバリデーション規則](./features.md#バリデーション規則) |
-| 5 | カテゴリの初期データを seed に書く | [database.md の初期データ](./database.md#初期データcategories-のシード) |
-| 6 | モデルのバリデーションをテストする | - |
+| 3 | `budgets` テーブルのマイグレーション（`year_month` の一意制約含む） | [database.md](./database.md#budgets月次予算) |
+| 4 | `Category` モデル（`has_many :entries`、`type` のバリデーション） | 同上 |
+| 5 | `Entry` モデル（`belongs_to :category`、各項目のバリデーション） | [features.md のバリデーション規則](./features.md#バリデーション規則) |
+| 6 | `Budget` モデル（`year_month` の形式と一意性のバリデーション） | 同上 |
+| 7 | カテゴリの初期データを seed に書く | [database.md の初期データ](./database.md#初期データcategories-のシード) |
+| 8 | モデルのバリデーションをテストする | - |
 
 ### 注意点
 
 - `type` は ActiveRecord が**単一テーブル継承（STI）用に予約している列名**のため、`Category` モデル側で STI を無効化する設定が必要になる。回避できない場合は列名を `category_type` に変更し、[database.md](./database.md) を更新する
-- `amount` のチェック制約（`> 0 かつ <= 9999999`）は、DB 制約とモデルバリデーションの両方に入れる
+- `amount` のチェック制約は、DB 制約とモデルバリデーションの両方に入れる
+- `budgets.year_month` の一意制約は、DB 側にも必ず入れる（[F-02](./features.md#f-02-予算の設定) の「2回目は上書きされる」を保証する土台になる）
 
 ### 完了条件
 
 - `rails db:migrate` が通り、`schema.rb` が [database.md](./database.md) の定義と一致する
 - `rails db:seed` で 13 件のカテゴリが投入され、再実行しても重複しない
-- モデルのバリデーションのテストが緑（不正な金額・日付なし・メモ201文字などが弾かれる）
+- モデルのバリデーションのテストが緑（不正な金額・日付なし・メモ201文字・同月の予算重複などが弾かれる）
 
 ---
 
 ## フェーズ3: API
 
-[features.md](./features.md) の F-01〜F-07 を実装する。**1 機能 = 1 Issue = 1 PR**。
+[features.md](./features.md) の機能を実装する。**1 機能 = 1 Issue = 1 PR**。
 各 PR では、受け入れ条件をそのままリクエストスペックの `it` に落としてから実装する。
 
 | Issue | 対応機能 | エンドポイント |
 | --- | --- | --- |
-| 一覧取得API | [F-01](./features.md#f-01-一覧表示) | `GET /api/entries`、`GET /api/categories` |
-| 検索API | [F-03](./features.md#f-03-検索絞り込み) | `GET /api/entries?from&to&category_id&keyword` |
-| 追加API | [F-04](./features.md#f-04-レコード追加) | `POST /api/entries` |
-| 更新API | [F-05](./features.md#f-05-レコード更新と並び替えドラッグドロップ) | `PUT /api/entries/{id}` |
-| 並び替えAPI | [F-05](./features.md#f-05-レコード更新と並び替えドラッグドロップ) | `PATCH /api/entries/order` |
-| 一括更新API | [F-06](./features.md#f-06-一括更新) | `PATCH /api/entries/bulk` |
-| 削除API | [F-07](./features.md#f-07-削除) | `DELETE /api/entries/{id}` |
+| 明細一覧API | [F-04](./features.md#f-04-月別明細一覧) | `GET /api/entries?month=`、`GET /api/categories` |
+| 月次サマリーAPI | [F-01](./features.md#f-01-月次サマリー), [F-03](./features.md#f-03-カテゴリ別集計) | `GET /api/summary?month=` |
+| 予算設定API | [F-02](./features.md#f-02-予算の設定) | `PUT /api/budgets/{year_month}` |
+| 検索API | [F-08](./features.md#f-08-検索絞り込み) | `GET /api/entries?category_id=&keyword=&from=&to=` |
+| 追加API | [F-05](./features.md#f-05-収支の追加) | `POST /api/entries` |
+| 更新・削除API | [F-06](./features.md#f-06-収支の編集), [F-07](./features.md#f-07-収支の削除) | `PUT /api/entries/{id}`、`DELETE /api/entries/{id}` |
+| 一括更新API | [F-09](./features.md#f-09-一括更新) | `PATCH /api/entries/bulk` |
 
-F-02 は画面のみの機能のため、このフェーズには含めない（フェーズ4で扱う）。
+明細一覧APIを最初にするのは、他のすべての API が `entries` の取得を前提にするため。
+月次サマリーAPIを 2 番目にするのは、これがアプリの中心機能（[F-01](./features.md#f-01-月次サマリー)）であり、早い段階で形にしておきたいため。
 
 ### 最初の Issue で一緒に作るもの
 
-一覧取得APIの PR で、以降すべての API が使う土台も作る。
+明細一覧APIの PR で、以降すべての API が使う土台も作る。
 
 - ルーティングの名前空間（`namespace :api`）
 - エラーハンドリングの共通化（`rescue_from` で 400 / 404 / 500 を [features.md の形式](./features.md#エラーレスポンス)に整形）
 - レスポンスの JSON 整形（Jbuilder のテンプレート、キーは snake_case）
+- 月の絞り込みの共通化（[database.md の方針](./database.md#月の絞り込み方法)どおり、範囲比較で書く）
 
 ### 完了条件
 
-- 7 本すべてのエンドポイントが実装され、リクエストスペックが緑
+- すべてのエンドポイントが実装され、リクエストスペックが緑
 - 各機能の受け入れ条件が、漏れなく `it` として存在する
-- 一括更新（F-06）で、対象外 ID が 1 件でも含まれる場合に**何も更新されない**ことがテストで確認できている
-- 並び替え（F-05）が 1 リクエスト・1 トランザクションで完結している
+- 月次サマリーで、予算未設定の月が `null` を返しエラーにならないことがテストで確認できている
+- 一括更新（F-09）で、対象外 ID が 1 件でも含まれる場合に**何も更新されない**ことがテストで確認できている
+- 月をまたいだデータが集計に混ざらないことがテストで確認できている
 
 ---
 
@@ -112,22 +118,24 @@ F-02 は画面のみの機能のため、このフェーズには含めない（
 
 | Issue | 内容 | 対応 |
 | --- | --- | --- |
-| 一覧画面の実装 | ヘッダ・集計バー・テーブル・空表示・ローディング | [F-02](./features.md#f-02-一覧画面ui) / [S-01](./screens.md#s-01-一覧画面) |
-| 入力モーダルの実装 | 追加・編集で共用、項目ごとのエラー表示領域 | [S-02](./screens.md#s-02-追加編集モーダル) |
-| 検索バーと一括操作バーの実装 | 検索条件の保持、選択状態の保持、選択時のみ一括操作バーを表示 | [S-01](./screens.md#s-01-一覧画面) / [S-03](./screens.md#s-03-削除確認ダイアログ) |
+| サマリーと内訳の実装 | 月切替・予算・使用額・残額・進捗バー・カテゴリ別内訳 | [F-01](./features.md#f-01-月次サマリー), [F-03](./features.md#f-03-カテゴリ別集計) / [S-01](./screens.md#s-01-ダッシュボード) |
+| 明細一覧と検索バーの実装 | テーブル・空表示・ローディング・検索条件の保持 | [F-04](./features.md#f-04-月別明細一覧), [F-08](./features.md#f-08-検索絞り込み) / [S-01](./screens.md#s-01-ダッシュボード) |
+| モーダルと選択モードの実装 | 収支入力・予算設定・削除確認の各モーダル、選択モードの切り替え | [S-02](./screens.md#s-02-収支入力モーダル), [S-03](./screens.md#s-03-削除確認ダイアログ), [S-04](./screens.md#s-04-予算設定モーダル) |
 
 ### 先に決めること
 
-- `Entry` / `Category` の TypeScript 型定義（[features.md のJSON表現](./features.md#レコードの-json-表現)と一致させる）
-- コンポーネント分割（`EntryTable` / `EntryRow` / `EntryFormModal` / `SearchBar` / `BulkActionBar` / `ConfirmDialog` / `SummaryBar`）
+- `Entry` / `Category` / `Summary` / `Budget` の TypeScript 型定義（[features.md のJSON表現](./features.md#レコードの-json-表現)と一致させる）
+- コンポーネント分割（`MonthNav` / `SummaryPanel` / `CategoryBreakdown` / `SearchBar` / `EntryTable` / `EntryRow` / `BulkActionBar` / `EntryFormModal` / `BudgetModal` / `ConfirmDialog`）
 - 金額の 3 桁区切り表示と、収入 `+` / 支出 `-` の表示を担う共通関数
 
 ### 完了条件
 
 - ダミーデータで、モックアップと同等の見た目になっている
-- 追加ボタンでモーダルが開閉する
-- 行のチェックボックスで選択でき、1 件以上選択すると一括操作バーが現れる
-- 金額が 3 桁区切りで、収入・支出が色で区別できる
+- **残額が画面内で最も目立つ要素になっている**
+- 予算超過時に、残額と進捗バーが警告色になる
+- 月切替ボタンで対象月の表示が変わる
+- 「選択」ボタンで選択モードに入り、「完了」で戻る
+- 各モーダルが開閉する
 
 ---
 
@@ -137,13 +145,15 @@ F-02 は画面のみの機能のため、このフェーズには含めない（
 
 | Issue | 内容 |
 | --- | --- |
-| API接続と CRUD の結合 | `src/api/` に fetch のラッパを作り、一覧・検索・追加・更新・一括更新・削除を実際の API に繋ぐ。エラーレスポンスの表示（項目エラーは入力欄の下、それ以外はエラーバナー）も行う |
-| ドラッグ&ドロップの結合 | vuedraggable を導入し、並び替え結果を `PATCH /api/entries/order` で永続化する。検索中は無効化し、API 失敗時は並びを元に戻す |
+| サマリー・明細の結合 | `src/api/` に fetch のラッパを作り、月次サマリー・明細一覧・月切替・検索を実際の API に繋ぐ。エラーレスポンスの表示（項目エラーは入力欄の下、それ以外はエラーバナー）も行う |
+| 更新系の結合 | 追加・編集・削除・予算設定・一括更新を API に繋ぐ。**更新のたびにサマリーと内訳を再取得**し、残額が即座に反映されるようにする |
 
 ### 完了条件
 
-- [features.md](./features.md) の F-01〜F-07 の受け入れ条件を、ブラウザ上で手動で一通り確認できる
-- 追加 → 一覧反映 → 検索 → 一括更新 → 並び替え → リロードして順序が保たれる → 削除、が通しで動く
+- [features.md](./features.md) の F-01〜F-09 の受け入れ条件を、ブラウザ上で手動で一通り確認できる
+- 予算設定 → 支出を追加 → 残額が減る → 削除 → 残額が戻る、が通しで動く
+- 月を切り替えると、サマリー・内訳・明細がすべて連動して変わる
+- 絞り込み中でも、サマリーと内訳が対象月全体の値のままであること
 - バリデーションエラー時に、該当項目の下にメッセージが出る
 - API を止めた状態でエラーバナーが出る
 
@@ -158,18 +168,18 @@ Terraform でインフラを構築し、デプロイする。
 | 1 | tfstate 用 S3 の bootstrap | state 保管用のバケットを先に作る（このバケット自身は state 管理の対象外とする） |
 | 2 | ネットワークと RDS | VPC、サブネット、セキュリティグループ、RDS（PostgreSQL 16）。RDS はプライベートに置き、EC2 のSGからのみ許可 |
 | 3 | EC2 と S3（フロント用） | EC2（Docker で Rails を実行）、フロント配信用の S3 バケットと静的ウェブサイト設定 |
-| 4 | デプロイと動作確認 | `deploy.sh`（フロントのビルドと S3 同期、EC2 上のコンテナ更新、`db:migrate` の実行）、本番環境変数（`DATABASE_URL`、`ALLOWED_ORIGINS`）の設定 |
+| 4 | デプロイと動作確認 | `deploy.sh`（フロントのビルドと S3 同期、EC2 上のコンテナ更新、`db:migrate` と `db:seed` の実行）、本番環境変数（`DATABASE_URL`、`ALLOWED_ORIGINS`）の設定 |
 
 ### 注意点
 
 - 本番は S3 と EC2 でオリジンが異なるため、`rack-cors` の設定が必須になる。ここを忘れると画面は表示されるが API が全滅する
 - 機密値（RDS パスワード）は `.tfvars` に置き、Git にコミットしない
-- 検証が終わったら `terraform destroy` で撤去する（手順9）
+- EC2 と RDS は**起動している時間だけ課金**される。検証が終わったら `terraform destroy` で撤去する（手順9）
 
 ### 完了条件
 
 - S3 の公開 URL を開くと画面が表示される
-- 公開環境で F-01〜F-07 のすべてが動作する
+- 公開環境で F-01〜F-09 のすべてが動作する
 - `terraform destroy` で全リソースが削除できることを確認している（実行は課題の完了後）
 
 ---

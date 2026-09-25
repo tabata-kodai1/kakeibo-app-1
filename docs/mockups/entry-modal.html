@@ -3,42 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>家計簿 — 追加・編集モーダル（S-02）モックアップ</title>
+<title>家計簿 — 収支入力モーダル（S-02）モックアップ</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <p class="mock-note">
-  モックアップ: <strong>S-02 追加・編集モーダル</strong>（<a href="../screens.md">screens.md</a>）。
-  背後は一覧画面（<a href="index.html">index.html</a>）。金額欄はバリデーションエラーの表示例です。
+  モックアップ: <strong>S-02 収支入力モーダル</strong>（<a href="../screens.md">screens.md</a>）。
+  背後はダッシュボード（<a href="index.html">index.html</a>）。金額欄はバリデーションエラーの表示例です。
+  予算設定モーダルは <a href="budget-modal.html">budget-modal.html</a>。
 </p>
 
 <div class="app">
   <div class="header">
     <h1>家計簿</h1>
-    <button class="btn btn-primary">＋ 追加</button>
+  </div>
+
+  <div class="month-nav">
+    <button>◀ 前月</button>
+    <span class="current">2026年9月</span>
+    <button>翌月 ▶</button>
   </div>
 
   <div class="card summary">
-    <div class="summary-item">
-      <div class="label">収入</div>
-      <div class="value income">250,000</div>
+    <div class="summary-head">
+      <div class="item">
+        <div class="label">予算</div>
+        <div class="value">80,000</div>
+      </div>
+      <div class="item">
+        <div class="label">使用</div>
+        <div class="value">52,300</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm">予算を設定</button>
     </div>
-    <div class="summary-item">
-      <div class="label">支出</div>
-      <div class="value expense">84,300</div>
+
+    <div class="progress">
+      <div class="fill" style="width: 65%"></div>
     </div>
-    <div class="summary-item">
-      <div class="label">差額</div>
-      <div class="value">165,700</div>
+    <div class="progress-label">65% 使用</div>
+
+    <div class="remaining">
+      <div class="label">残り</div>
+      <div class="value">27,700<span class="unit">円</span></div>
+      <div class="note">9月30日まであと6日</div>
     </div>
+  </div>
+
+  <div class="list-head">
+    <span class="count">明細 6件</span>
+    <span class="actions">
+      <button class="btn btn-primary btn-sm">＋ 追加</button>
+      <button class="btn btn-sm">選択</button>
+    </span>
   </div>
 
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th class="col-handle"></th>
-          <th class="col-check"><input type="checkbox"></th>
           <th class="col-date">日付</th>
           <th class="col-category">カテゴリ</th>
           <th class="col-amount">金額</th>
@@ -48,8 +71,6 @@
       </thead>
       <tbody>
         <tr>
-          <td class="col-handle"><span class="handle">⠿</span></td>
-          <td class="col-check"><input type="checkbox"></td>
           <td>09/25</td>
           <td>食費</td>
           <td class="col-amount"><span class="amount expense">-1,280</span></td>
@@ -60,8 +81,6 @@
           </td>
         </tr>
         <tr>
-          <td class="col-handle"><span class="handle">⠿</span></td>
-          <td class="col-check"><input type="checkbox"></td>
           <td>09/25</td>
           <td>給与</td>
           <td class="col-amount"><span class="amount income">+250,000</span></td>
@@ -76,7 +95,7 @@
   </div>
 </div>
 
-<!-- S-02 追加・編集モーダル -->
+<!-- S-02 収支入力モーダル -->
 <div class="overlay">
   <div class="modal">
     <div class="modal-header">
