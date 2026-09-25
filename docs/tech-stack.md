@@ -117,7 +117,7 @@ scope = scope.where("memo ILIKE ?", "%#{keyword}%") if keyword.present?
 
 ```ruby
 # 1. 件数の上限チェック（non-functional.md の N-29: 500 件まで）→ 超過は 400
-# 2. 対象 ID がすべて存在するか → 1 件でも欠ければ 400。何も更新しない
+# 2. 対象 ID がすべて存在するか → 1 件でも欠ければ 404。何も更新しない
 # 3. 変更先カテゴリの category_type と、対象 entries の現在の category_type が
 #    すべて一致するか → 不一致なら 400（features.md の「収支区分の変更について」）
 # 4. transaction で囲んで update_all（updated_at を明示指定）
