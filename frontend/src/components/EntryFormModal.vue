@@ -100,10 +100,12 @@ function save() {
         <span v-if="serverMessage" class="field-error" role="alert">{{ serverMessage }}</span>
         <div class="field">
           <label for="entry-date">日付<span class="required">必須</span></label>
+          <!-- showModal() は既定で先頭の「×」にフォーカスするため、autofocus で最初の入力欄に置く（N-21） -->
           <input
             id="entry-date"
             v-model="form.entry_date"
             type="date"
+            autofocus
             :class="{ invalid: errors.entry_date }"
             @input="clearError('entry_date')"
           />
