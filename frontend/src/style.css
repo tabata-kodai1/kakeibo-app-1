@@ -1,292 +1,506 @@
+/* 家計簿アプリ 共通スタイル
+   docs/mockups/style.css をそのまま流用している（画面の見た目の基準）。
+   モックアップ専用の注記スタイルだけ除いた。見た目を変えるときはモックアップと設計書を先に直す。 */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --border: #dfe3e8;
+  --text: #1f2933;
+  --text-muted: #6b7684;
+  --accent: #2f6fed;
+  --accent-hover: #2559c7;
+  --expense: #d13b3b;
+  --income: #1f8b4c;
+  --danger: #d13b3b;
+  --warning: #c77700;
+  --selected-bg: #eaf1fe;
+  --track: #e8ebef;
+  --radius: 6px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
-
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
-
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) scale(0.8);
-  }
-}
-
-#app {
-  width: 1126px;
-  max-width: 100%;
+.app {
+  max-width: 880px;
   margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+/* ヘッダ */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.header h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+/* ボタン */
+.btn {
+  font: inherit;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn:hover {
+  background: #f0f2f5;
+}
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn-icon {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+.btn-icon:hover {
+  color: var(--text);
+}
+
+/* カード共通 */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* 月切替 */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+.month-nav .current {
+  font-size: 18px;
+  font-weight: 600;
+  min-width: 140px;
   text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+}
+.month-nav button {
+  font: inherit;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 4px 12px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.month-nav button:hover {
+  background: #f0f2f5;
+  color: var(--text);
 }
 
-#center {
+/* サマリー（画面の主役） */
+.summary {
+  padding: 20px 24px 24px;
+}
+.summary-head {
   display: flex;
-  flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  align-items: baseline;
+  gap: 28px;
+  margin-bottom: 12px;
+}
+.summary-head .item .label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.summary-head .item .value {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.summary-head .spacer {
+  margin-left: auto;
 }
 
-#next-steps {
-  display: flex;
+.progress {
+  height: 12px;
+  background: var(--track);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+}
+.progress.over .fill {
+  background: var(--danger);
+}
+.progress-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-bottom: 18px;
+}
+
+.remaining {
+  text-align: center;
+  padding-top: 6px;
   border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+}
+.remaining .label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.remaining .value {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.remaining .value .unit {
+  font-size: 20px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.remaining.over .value {
+  color: var(--danger);
+}
+.remaining .note {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.remaining.over .note {
+  color: var(--danger);
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+/* カテゴリ別集計 */
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 90px 80px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 0;
+}
+.breakdown-row .cat {
+  color: var(--text);
+}
+.breakdown-row .amt {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.breakdown-row .bar {
+  height: 8px;
+  background: var(--track);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.breakdown-row .bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+}
+.breakdown-row .pct {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
+/* 検索バー */
+.search {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.field .range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+input[type='text'],
+input[type='date'],
+input[type='number'],
+select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+.search-actions {
   display: flex;
   gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+  margin-left: auto;
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+/* 一括操作バー */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--selected-bg);
+  border-color: #c4d8fb;
+}
+.bulk-bar .count {
+  font-weight: 600;
+}
+.bulk-bar .spacer {
+  margin-left: auto;
 }
 
-.ticks {
-  position: relative;
+/* 明細 */
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.list-head .count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.list-head .actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+table {
   width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+th {
+  background: #fafbfc;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+tbody tr:hover {
+  background: #fafbfc;
+}
+tr.selected {
+  background: var(--selected-bg);
+}
+tr.selected:hover {
+  background: #e0ebfd;
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
+.col-check {
+  width: 36px;
+}
+.col-date {
+  width: 90px;
+}
+.col-category {
+  width: 130px;
+}
+.col-amount {
+  width: 120px;
+  text-align: right;
+}
+.col-actions {
+  width: 80px;
+  text-align: right;
+}
+td.col-amount {
+  text-align: right;
+}
+td.col-actions {
+  text-align: right;
+}
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
-  }
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.amount.expense {
+  color: var(--expense);
+}
+.amount.income {
+  color: var(--income);
+}
+
+.memo {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+/* 空表示・ローディング・エラー */
+.empty,
+.loading {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+.error-banner {
+  background: #fdecec;
+  border: 1px solid #f3bcbc;
+  color: #9b2626;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* モーダル */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 41, 51, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  background: var(--surface);
+  border-radius: 8px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-body .field label {
+  font-size: 13px;
+  color: var(--text);
+}
+.modal-body input,
+.modal-body select {
+  width: 100%;
+}
+.modal-body .hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+.field-error {
+  color: var(--danger);
+  font-size: 12px;
+}
+input.invalid,
+select.invalid {
+  border-color: var(--danger);
+}
+.required {
+  color: var(--danger);
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+/* --- 実装で追加した最小限のスタイル ---
+   見た目はモックアップと同じ。モックアップは div の .overlay でモーダルを作っているが、
+   実装は HTML 標準の <dialog> なので、そのぶんのリセットと背景（::backdrop）が要る。 */
+dialog.modal {
+  padding: 0;
+  border: none;
+  color: var(--text);
+}
+dialog.modal::backdrop {
+  background: rgba(31, 41, 51, 0.45);
+}
+
+/* 一括操作バー: 理由の文言が入っても折り返せるようにする。無効なとき（0 件・混在）の見た目 */
+.bulk-bar {
+  flex-wrap: wrap;
+}
+.bulk-bar .reason {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.btn:disabled,
+select:disabled,
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
