@@ -375,6 +375,8 @@ Rails の `config/master.key`、RDS のパスワードを含む `.tfvars`、`.en
 | `DATABASE_URL` | DB の接続先。ローカルは compose の `db`、本番は RDS のエンドポイント。スキームは `mysql2://`（後述） | N-11 |
 | `ALLOWED_ORIGINS` | `rack-cors` の許可オリジン。本番は S3 の静的サイトドメインのみを指定し、ワイルドカードは使わない | [N-12](./non-functional.md#セキュリティ) |
 | `RAILS_MASTER_KEY` | 本番の credentials 復号用 | N-11 |
+| `VITE_API_BASE_URL` | フロントが API を呼ぶ先のオリジン（ビルド時に埋め込まれる）。**未指定なら相対パス（`/api/...`）** で、開発時は Vite の proxy を通る。本番は S3 と EC2 でオリジンが分かれるため、EC2 の API の URL を指定する | フェーズ 6 |
+| `API_PROXY_TARGET` | 開発時の Vite の proxy の転送先。未指定なら `http://localhost:3000`。別の DB で動かした Rails に繋いで確かめるときなどに使う | 開発のみ |
 | `RAILS_LOG_TO_STDOUT` | ログを標準出力に出す | [N-19](./non-functional.md#保守性運用) |
 
 `DATABASE_URL` のスキームは **`mysql2://`** とする。`mysql://` ではない。Rails は URL のスキームでアダプタ名を決めており、それが gem 名（`mysql2`）と一致するため。PostgreSQL の `postgres://` から書き換えるときに間違えやすく、誤ると起動時に接続エラーになる。
