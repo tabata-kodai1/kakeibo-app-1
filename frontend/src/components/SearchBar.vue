@@ -5,7 +5,8 @@ import { emptyConditions, isPeriodReversed } from '../utils/entryList'
 
 // 検索バー（F-08）。入力中の値（draft）はここで持ち、「検索」を押した時点の値だけを親へ渡す。
 // 親が持つ「反映済みの条件」は、入力途中では変わらない（docs/screens.md「検索条件の扱い」）
-defineProps<{ categories: Category[] }>()
+// serverError は、API が返した検索の 400（件数超過など）。直前の一覧は親が保持する
+defineProps<{ categories: Category[]; serverError?: string | null }>()
 const emit = defineEmits<{ search: [conditions: SearchConditions]; clear: [] }>()
 
 const draft = ref<SearchConditions>(emptyConditions())
@@ -72,6 +73,8 @@ function clear() {
         <button type="button" class="btn" @click="clear">クリア</button>
       </div>
     </form>
-    <div v-if="error" class="field-error" role="alert">{{ error }}</div>
+    <div v-if="error ?? serverError" class="field-error" role="alert">
+      {{ error ?? serverError }}
+    </div>
   </div>
 </template>
