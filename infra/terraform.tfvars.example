@@ -7,4 +7,4 @@ allowed_cidr = "203.0.113.10/32"
 ssh_public_key = "ssh-ed25519 AAAA...example"
 
 # 英数字のみ 16 文字以上
-db_password = "ChangeMeToRandomAlnum"
+db_password = "ChangeMeToRandomAlnum" # secret-scan: allow（ダミー値）

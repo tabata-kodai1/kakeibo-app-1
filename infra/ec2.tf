@@ -29,7 +29,7 @@ resource "aws_instance" "api" {
 
   metadata_options {
     http_endpoint = "enabled"
-    http_tokens   = "required" # IMDSv2 のみ
+    http_tokens   = "required" # IMDSv2 のみ。secret-scan: allow（設定値で、秘密ではない）
   }
 
   tags = { Name = "kakeibo-api" }
