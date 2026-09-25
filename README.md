@@ -66,11 +66,20 @@ docs/       設計書（正）
 必要なツールは Docker Desktop と Node.js 20 以上。Ruby はコンテナ側で動かすため、ホストへの導入は不要。
 
 ```
-cp .env.example .env     # DB の接続情報。.env は Git にコミットしない
-docker compose up        # MySQL と Rails API
+cp .env.example .env              # DB の接続情報。.env は Git にコミットしない
+docker compose up                 # MySQL（3306）と Rails API（3000）
+cd frontend && npm ci && npm run dev   # Vite（5173）
 ```
 
-> フロントエンド（`npm run dev`）の手順は、[#13](https://github.com/tabata-kodai1/kakeibo-app-1/issues/13) で `frontend/` を初期化したときに追記する。
+ブラウザで http://localhost:5173 を開く。`/api` へのリクエストは Vite の proxy で Rails（3000）に転送されるため、開発中に CORS は発生しない。
+
+| 対象 | コマンド | 実行場所 |
+| --- | --- | --- |
+| Ruby の書式 | `bin/rubocop` | `backend/`（コンテナ内） |
+| Ruby の静的セキュリティ解析 | `bin/brakeman` | 同上 |
+| gem の脆弱性 | `bin/bundler-audit` | 同上 |
+| テスト | `bundle exec rspec` | 同上 |
+| フロントの検出・書式・型 | `npm run lint` / `npm run format:check` / `npm run typecheck` | `frontend/` |
 
 ## 現在の状況
 
