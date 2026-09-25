@@ -60,7 +60,7 @@ docs: 設計書を正とする方針を N-18 に明記する
 - **月の絞り込みは範囲比較で書く。** `WHERE entry_date >= '2026-09-01' AND entry_date < '2026-10-01'`。`YEAR()` / `MONTH()` / `DATE_FORMAT()` は列に関数を適用するためインデックスが効かなくなる
 - **月次サマリーとカテゴリ別集計は SQL の集計で求める。** アプリ側でループしない（[N-03](./docs/non-functional.md#利用環境性能)）
 - **残額の計算に収入は含めない。** `remaining = budget - expense_total`
-- **予算 0 円と予算未設定は別の状態。** 未設定は行が存在しない状態で、`budget` と `usage_rate` は `null` を返す
+- **予算 0 円と予算未設定は別の状態。** 未設定は行が存在しない状態で、`budget`・`remaining`・`usage_rate` は `null` を返す
 - 金額はすべて整数。タイムゾーンは `Asia/Tokyo`
 
 ## 品質

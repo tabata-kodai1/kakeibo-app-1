@@ -120,7 +120,7 @@ GET /api/summary?month=2026-09
 | --- | --- |
 | `expense_total` | 対象月の `EXPENSE` カテゴリのレコードの合計 |
 | `income_total` | 対象月の `INCOME` カテゴリのレコードの合計 |
-| `remaining` | `budget - expense_total`。**収入は含めない** |
+| `remaining` | `budget - expense_total`。**収入は含めない**。`budget` が未設定なら `null`（予算がないのに残額を出すと `-expense_total` になり、残額と誤読されるため） |
 | `usage_rate` | `expense_total / budget * 100` を整数に丸めた値。`budget` が 0 または未設定なら `null`（0 除算を避けるため） |
 | `over_budget` | `budget` が設定済みで `remaining < 0` なら `true`。`budget` が未設定なら常に `false` |
 | `entry_count` | 対象月のレコード総件数（収入・支出の両方を含む）。**検索条件の影響を受けない** |
@@ -138,7 +138,7 @@ GET /api/summary?month=2026-09
 
 ### 受け入れ条件
 - 対象月のレコードだけが集計に含まれること（前月・翌月のデータが混ざらない）
-- 予算が未設定の月は `budget` と `usage_rate` が `null` で返り、エラーにならないこと
+- 予算が未設定の月は `budget`・`remaining`・`usage_rate` が `null` で返り、エラーにならないこと
 - 予算が未設定でも `expense_total` と `income_total` は計算されること
 - 支出が予算を超えたとき、`remaining` が負の値になり `over_budget` が `true` になること
 - レコードが 0 件の月でも、合計 0 でエラーなく返ること
@@ -215,7 +215,7 @@ PUT /api/budgets/2026-09
 ### 受け入れ条件
 - 支出カテゴリのみが対象で、**収入カテゴリは含まれない**こと
 - 対象月に使われていないカテゴリは、一覧に含まれないこと（0 円の行を出さない）
-- 金額の降順（使った順）で並ぶこと
+- 金額の降順（使った順）で並ぶこと。金額が同じなら `category_id` の昇順（並びが実行のたびに入れ替わらないようにするため）
 - 支出が 0 件の月は、空配列が返り「支出がありません」と表示されること
 - 各カテゴリの `rate` の合計が概ね 100% になること（丸め誤差は許容）
 - 画面ではカテゴリ名・金額・割合が表示され、割合が視覚的に分かること
