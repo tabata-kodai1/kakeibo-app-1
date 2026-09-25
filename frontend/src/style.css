@@ -477,3 +477,30 @@ select.invalid {
   font-size: 12px;
   margin-left: 2px;
 }
+
+/* --- 実装で追加した最小限のスタイル ---
+   見た目はモックアップと同じ。モックアップは div の .overlay でモーダルを作っているが、
+   実装は HTML 標準の <dialog> なので、そのぶんのリセットと背景（::backdrop）が要る。 */
+dialog.modal {
+  padding: 0;
+  border: none;
+  color: var(--text);
+}
+dialog.modal::backdrop {
+  background: rgba(31, 41, 51, 0.45);
+}
+
+/* 一括操作バー: 理由の文言が入っても折り返せるようにする。無効なとき（0 件・混在）の見た目 */
+.bulk-bar {
+  flex-wrap: wrap;
+}
+.bulk-bar .reason {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.btn:disabled,
+select:disabled,
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

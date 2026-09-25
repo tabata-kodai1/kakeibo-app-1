@@ -2,13 +2,22 @@
 import type { Entry } from '../types'
 import { formatShortDate, formatSignedAmount } from '../utils/format'
 
-// 明細 1 行（F-04）。編集・削除ボタンは通常モードのみ。選択モードの列は別の Issue で足す
-defineProps<{ entry: Entry }>()
-const emit = defineEmits<{ edit: [entry: Entry]; delete: [entry: Entry] }>()
+// 明細 1 行（F-04）。通常モードは編集・削除ボタン、選択モードはチェックボックス（F-09）。
+// 選択モードでは、チェックボックスを押したときだけ選択が変わる
+defineProps<{ entry: Entry; selectMode?: boolean; selected?: boolean }>()
+const emit = defineEmits<{ edit: [entry: Entry]; delete: [entry: Entry]; toggle: [] }>()
 </script>
 
 <template>
-  <tr>
+  <tr :class="{ selected: selectMode && selected }">
+    <td v-if="selectMode" class="col-check">
+      <input
+        type="checkbox"
+        :checked="selected"
+        :aria-label="`${formatShortDate(entry.entry_date)} ${entry.category_name} を選択`"
+        @change="emit('toggle')"
+      />
+    </td>
     <td>{{ formatShortDate(entry.entry_date) }}</td>
     <td>{{ entry.category_name }}</td>
     <td class="col-amount">
@@ -18,7 +27,7 @@ const emit = defineEmits<{ edit: [entry: Entry]; delete: [entry: Entry] }>()
     </td>
     <!-- 長いメモは省略表示し、全文は title で見られる -->
     <td class="memo" :title="entry.memo ?? undefined">{{ entry.memo }}</td>
-    <td class="col-actions">
+    <td v-if="!selectMode" class="col-actions">
       <button
         type="button"
         class="btn-icon"
