@@ -26,7 +26,7 @@
 | # | 作業 | 成果物 |
 | --- | --- | --- |
 | 1 | リポジトリ構成を決める | `backend/`、`frontend/`、`infra/`、`docs/` |
-| 2 | Docker Compose で PostgreSQL 16 と Rails を起動できるようにする（データは名前付きボリューム、ログは `max-size` / `max-file` を指定） | `docker-compose.yml` |
+| 2 | Docker Compose で MySQL 8.4 と Rails を起動できるようにする（データは名前付きボリューム、ログは `max-size` / `max-file` を指定） | `docker-compose.yml` |
 | 3 | Rails を API モードで初期化する（[生成時のオプション](./tech-stack.md#生成時のオプション)のコマンドをそのまま使う。`--skip-ci` は付けない） | `backend/` |
 | 4 | Jbuilder・rack-cors・RSpec・FactoryBot を Gemfile に追加する（[自分で追加するもの](./tech-stack.md#自分で追加するもの)） | `backend/spec/`、`.rspec` |
 | 5 | Vite + Vue 3 + TypeScript を初期化する | `frontend/` |
@@ -37,7 +37,7 @@
 
 ### 完了条件
 
-- `docker compose up` で PostgreSQL が起動し、Rails から接続できる
+- `docker compose up` で MySQL が起動し、Rails から接続できる
 - Rails が `localhost:3000` で起動し、疎通確認用のエンドポイントが JSON を返す
 - Vite が `localhost:5173` で起動し、ブラウザから Vue の初期画面が見える
 - フロントから `/api/...` を叩くと proxy 経由で Rails に届く（CORS エラーが出ない）
@@ -178,7 +178,7 @@ Terraform でインフラを構築し、デプロイする。
 | # | Issue | 内容 |
 | --- | --- | --- |
 | 1 | tfstate 用 S3 の bootstrap | state 保管用のバケットを先に作る（このバケット自身は state 管理の対象外とする） |
-| 2 | ネットワークと RDS | VPC、サブネット、セキュリティグループ、RDS（PostgreSQL 16）。RDS はプライベートに置き、EC2 のSGからのみ許可 |
+| 2 | ネットワークと RDS | VPC、サブネット、セキュリティグループ、RDS（MySQL 8.4）。RDS はプライベートに置き、EC2 のSGからのみ許可 |
 | 3 | EC2 と S3（フロント用） | EC2（Docker で Rails を実行）、フロント配信用の S3 バケットと静的ウェブサイト設定 |
 | 4 | デプロイと動作確認 | `deploy.sh`（フロントのビルドと S3 同期、EC2 上のコンテナ更新、`db:migrate` と `db:seed` の実行）、本番環境変数（`DATABASE_URL`、`ALLOWED_ORIGINS`）の設定 |
 

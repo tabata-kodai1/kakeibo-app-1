@@ -41,7 +41,7 @@
 | ID | 分類 | 要件 | 確認方法 |
 | --- | --- | --- | --- |
 | N-08 | 公開範囲 | 認証がないため、接続元 IP を自身の環境に限定する。**API は EC2 のセキュリティグループで、画面はフロント配信用 S3 バケットのバケットポリシー（`aws:SourceIp`）で制限する**。セキュリティグループは S3 には効かないため、両方が必要 | Terraform のコードレビュー、外部からの接続不可の確認（API・画面の両方） |
-| N-09 | DB アクセス | DB アクセスはすべて ActiveRecord 経由とし、SQL 文字列に値を直接連結しない | Brakeman（CI で実行）＋コードレビュー（`ILIKE` 等の生 SQL はプレースホルダ使用） |
+| N-09 | DB アクセス | DB アクセスはすべて ActiveRecord 経由とし、SQL 文字列に値を直接連結しない | Brakeman（CI で実行）＋コードレビュー（`LIKE` 等の生 SQL はプレースホルダ使用） |
 | N-10 | ネットワーク | RDS はプライベートサブネットに置き、EC2 のセキュリティグループからのみ接続を許可する | Terraform のコードレビュー |
 | N-11 | 機密情報 | 接続情報・鍵・パスワードはソースにハードコードせず環境変数から読み込む。`master.key` / `.tfvars` / `.env` は Git にコミットしない | `.gitignore` の確認、`git log -p` での混入確認 |
 | N-12 | CORS | 本番の許可オリジンは S3 の静的サイトドメインのみとし、環境変数で設定する（ワイルドカード不可） | `rack-cors` の設定確認 |
@@ -98,7 +98,7 @@
 | N-34 | コード品質 | RuboCop（Ruby）と ESLint + Prettier（TypeScript / Vue）で警告のない状態を保つ。型チェックは `vue-tsc --noEmit` で行う。Ruby 側は Rails 同梱の `rubocop-rails-omakase` をそのまま使う | CI／ローカル実行 |
 | N-35 | 依存関係 | 依存ライブラリのバージョンを `Gemfile.lock` / `package-lock.json` で固定し、`bundler-audit` / `npm audit` の重大な脆弱性を残さない。あわせて Brakeman の警告も残さない（いずれも Rails 同梱） | CI／ローカル実行 |
 | N-36 | 再現性 | クローン直後に README の手順どおり `docker compose up`（DB・API）と `npm run dev`（フロント）でローカル環境が起動する。手順7 の `start-servers` スキルで 1 コマンドに集約する | 別ディレクトリにクローンして確認 |
-| N-37 | 環境差異 | ローカルと本番で PostgreSQL・Ruby のメジャーバージョンを一致させる | `docker-compose.yml` と RDS の設定確認 |
+| N-37 | 環境差異 | ローカルと本番で MySQL・Ruby のメジャーバージョンを一致させる。文字コード（`utf8mb4`）と照合順序（`utf8mb4_0900_ai_ci`）も揃える | `docker-compose.yml` と RDS の設定確認 |
 
 ### デプロイ・バックアップ
 
