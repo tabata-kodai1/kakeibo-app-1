@@ -1,6 +1,15 @@
 # データベース設計
 
-DBMS は PostgreSQL（詳細なバージョンは [tech-stack.md](./tech-stack.md) 参照）。
+DBMS は MySQL（詳細なバージョンは [tech-stack.md](./tech-stack.md) 参照）。
+文字コードは `utf8mb4`、照合順序は `utf8mb4_0900_ai_ci`（大文字小文字を区別しない）とする。ストレージエンジンは InnoDB（既定）。
+
+MySQL 固有の型の選択:
+
+| 選択 | 理由 |
+| --- | --- |
+| `utf8mb4`（`utf8` ではなく） | MySQL の `utf8` は 3 バイトまでで、絵文字や一部の漢字を保存できない |
+| `DATETIME(6)`（`TIMESTAMP` ではなく） | `TIMESTAMP` は 2038 年で上限に達する。Rails の `t.timestamps` も MySQL では `datetime(6)` を生成する |
+| `utf8mb4_0900_ai_ci` | `ci`（case-insensitive）により、メモのキーワード検索（[F-08](./features.md#f-08-検索絞り込み)）の「大文字小文字を区別しない部分一致」が `LIKE` だけで成立する |
 認証なし・単一ユーザーのため、ユーザーを表すテーブルは持たない（[requirements.md](./requirements.md#22-対象外作らないもの) 参照）。
 
 ## ER 図
@@ -43,10 +52,10 @@ erDiagram
 
 | 列名 | 型 | NOT NULL | デフォルト | 説明 |
 | --- | --- | --- | --- | --- |
-| `id` | `BIGSERIAL` | ○ | 自動採番 | 主キー |
+| `id` | `BIGINT` AUTO_INCREMENT | ○ | 自動採番 | 主キー |
 | `name` | `VARCHAR(50)` | ○ | - | カテゴリ名（例: 食費、給与） |
 | `category_type` | `VARCHAR(10)` | ○ | - | 収支区分。`INCOME` または `EXPENSE` |
-| `created_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
+| `created_at` | `DATETIME(6)` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
 
 制約:
 
@@ -64,13 +73,13 @@ erDiagram
 
 | 列名 | 型 | NOT NULL | デフォルト | 説明 |
 | --- | --- | --- | --- | --- |
-| `id` | `BIGSERIAL` | ○ | 自動採番 | 主キー |
+| `id` | `BIGINT` AUTO_INCREMENT | ○ | 自動採番 | 主キー |
 | `entry_date` | `DATE` | ○ | - | 収支が発生した日。時刻は持たない |
 | `category_id` | `BIGINT` | ○ | - | `categories.id` への外部キー |
 | `amount` | `INTEGER` | ○ | - | 金額（円）。常に正の値で保持し、収入/支出は `categories.category_type` で判断する |
 | `memo` | `VARCHAR(200)` | - | `NULL` | メモ。未入力可 |
-| `created_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
-| `updated_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 更新日時。更新のたびに現在時刻で上書きする |
+| `created_at` | `DATETIME(6)` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
+| `updated_at` | `DATETIME(6)` | ○ | `CURRENT_TIMESTAMP` | 更新日時。更新のたびに現在時刻で上書きする |
 
 制約:
 
@@ -90,11 +99,11 @@ erDiagram
 
 | 列名 | 型 | NOT NULL | デフォルト | 説明 |
 | --- | --- | --- | --- | --- |
-| `id` | `BIGSERIAL` | ○ | 自動採番 | 主キー |
+| `id` | `BIGINT` AUTO_INCREMENT | ○ | 自動採番 | 主キー |
 | `year_month` | `VARCHAR(7)` | ○ | - | 対象月。`2026-09` 形式 |
 | `amount` | `INTEGER` | ○ | - | その月の予算額（円） |
-| `created_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
-| `updated_at` | `TIMESTAMP` | ○ | `CURRENT_TIMESTAMP` | 更新日時 |
+| `created_at` | `DATETIME(6)` | ○ | `CURRENT_TIMESTAMP` | 作成日時 |
+| `updated_at` | `DATETIME(6)` | ○ | `CURRENT_TIMESTAMP` | 更新日時 |
 
 制約:
 
@@ -125,7 +134,7 @@ erDiagram
 | `index_entries_on_category_id` | `entries(category_id)` | カテゴリ絞り込み（F-08）、カテゴリ別集計（F-03）、結合 |
 | `index_budgets_on_year_month` | `budgets(year_month)` | 一意制約により自動的に作成される |
 
-メモのキーワード検索（F-08）は部分一致（`ILIKE '%...%'`）のため通常のインデックスが効かない。要件の想定件数が 1,000 件程度（[non-functional.md の N-03](./non-functional.md#利用環境性能)）であり、全件走査で許容範囲と判断してインデックスは張らない。
+メモのキーワード検索（F-08）は部分一致（`LIKE '%...%'`）のため通常のインデックスが効かない。前方一致でないため、先頭にワイルドカードが付く形になり B-Tree インデックスを使えないため。要件の想定件数が 1,000 件程度（[non-functional.md の N-03](./non-functional.md#利用環境性能)）であり、全件走査で許容範囲と判断してインデックスは張らない。
 
 ## 月の絞り込み方法
 
@@ -135,7 +144,7 @@ erDiagram
 WHERE entry_date >= '2026-09-01' AND entry_date < '2026-10-01'
 ```
 
-`EXTRACT` や `TO_CHAR` で年月を取り出して比較する書き方（`WHERE TO_CHAR(entry_date, 'YYYY-MM') = '2026-09'`）は避ける。**列に関数を適用するとインデックスが使われなくなる**ため。範囲比較なら `index_entries_on_entry_date` が効く。
+`YEAR()` / `MONTH()` / `DATE_FORMAT()` で年月を取り出して比較する書き方（`WHERE DATE_FORMAT(entry_date, '%Y-%m') = '2026-09'`）は避ける。**列に関数を適用するとインデックスが使われなくなる**ため。範囲比較なら `index_entries_on_entry_date` が効く。
 
 ## 初期データ（categories のシード）
 

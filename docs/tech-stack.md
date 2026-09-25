@@ -10,7 +10,7 @@ flowchart LR
     Browser["ブラウザ<br/>Chrome"]
     S3["S3<br/>Vue のビルド成果物"]
     EC2["EC2<br/>Rails API (Docker)"]
-    RDS["RDS<br/>PostgreSQL"]
+    RDS["RDS<br/>MySQL"]
 
     Browser -->|"HTML/JS/CSS"| S3
     Browser -->|"/api/* (JSON)"| EC2
@@ -30,7 +30,7 @@ flowchart LR
 | APIレスポンス整形 | Jbuilder | 最新安定版 |
 | CORS | rack-cors | 最新安定版 |
 | テスト | RSpec Rails + FactoryBot | 最新安定版 |
-| データベース | PostgreSQL | 16 |
+| データベース | MySQL | 8.4（LTS） |
 | フロントエンド言語 | TypeScript | 5.x 系 |
 | フロントエンドFW | Vue | 3 系（Composition API） |
 | ビルドツール | Vite | 最新安定版 |
@@ -63,7 +63,7 @@ Rails を選ぶ実務上の理由:
 `rails new` は、使わない構成要素まで一式生成する。生成の時点で外しておく。
 
 ```
-rails new backend --api --database=postgresql \
+rails new backend --api --database=mysql \
   --skip-test --skip-kamal --skip-solid --skip-thruster \
   --skip-action-mailer --skip-action-mailbox --skip-action-text \
   --skip-active-storage --skip-action-cable
@@ -132,10 +132,10 @@ scope = Entry.includes(:category)
 scope = scope.where(entry_date: from..) if from.present?
 scope = scope.where(entry_date: ..to)   if to.present?
 scope = scope.where(category_id:)       if category_id.present?
-scope = scope.where("memo ILIKE ?", "%#{keyword}%") if keyword.present?
+scope = scope.where("memo LIKE ?", "%#{keyword}%") if keyword.present?
 ```
 
-条件の有無で WHERE 句が変わる処理を、条件分岐をそのまま並べる形で表現できる。生成される SQL もプレースホルダ経由となり、[N-09](./non-functional.md#セキュリティ)（SQL 文字列に値を直接連結しない）を満たす。キーワード検索の `ILIKE` も、上記のとおり `?` のプレースホルダを使い、文字列結合では組み立てない。
+条件の有無で WHERE 句が変わる処理を、条件分岐をそのまま並べる形で表現できる。生成される SQL もプレースホルダ経由となり、[N-09](./non-functional.md#セキュリティ)（SQL 文字列に値を直接連結しない）を満たす。キーワード検索の `LIKE` も、上記のとおり `?` のプレースホルダを使い、文字列結合では組み立てない。
 
 #### 一括更新・一括削除で自分が担保すること
 
@@ -158,12 +158,19 @@ scope = scope.where("memo ILIKE ?", "%#{keyword}%") if keyword.present?
 
 **一括削除は `delete_all` を 1 文で使う**（`destroy_all` は対象の件数ぶん DELETE を発行する）。`entries` は他のテーブルから参照されておらず、削除時に連鎖させる関連もないため、コールバックを通す必要がない。1 回の DELETE で完結することが、[N-06](./non-functional.md#信頼性可用性) の「部分的に削除された状態を残さない」に直結する。
 
-### データベース: PostgreSQL 16
+### データベース: MySQL 8.4
 
-課題の指定 DBMS。ローカルは Docker Compose、本番は RDS で同一メジャーバージョンを使い、環境差をなくす。
-メモのキーワード検索（F-08）で、大文字小文字を区別しない部分一致に `ILIKE` をそのまま使える。
+今回のデータは 3 テーブル・数千行規模で、必要なのは主キー・外部キー・一意制約・チェック制約と、日付範囲での絞り込みと `GROUP BY` の集計だけ。**どの RDBMS でも satisfied できる要件**であるため、機能差ではなく次の観点で選んだ。
 
-データベースの文字コードは **UTF-8**（`ENCODING=UTF8`）で作成する。ローカルのコンテナと RDS の両方で明示的に指定し、日本語のメモ・カテゴリ名が化けないようにする（[N-15](./non-functional.md#入力と表現)）。Rails と JSON レスポンスは既定で UTF-8 のため、追加の設定は不要。
+- **日本語の情報量が最も多い。** Ruby と Vue を同時に学ぶため、DB まわりで調べ物に時間を取られない方がよい（Vue を選んだのと同じ判断基準）
+- **RDS で標準的に使える。** 8.4 は LTS（長期サポート）版で、ローカルの Docker イメージと RDS の両方に同じメジャーバージョンが揃う（[N-37](./non-functional.md#開発プロセス品質)）
+- 実務での採用例が多く、学習した内容を次に活かしやすい
+
+**メモのキーワード検索（F-08）で照合順序がそのまま効く。** MySQL の既定の照合順序（`utf8mb4_0900_ai_ci` の `ci` = case-insensitive）は大文字小文字を区別しないため、`LIKE '%...%'` を書くだけで [F-08](./features.md#f-08-検索絞り込み) の「大文字小文字を区別しない部分一致」を満たせる。PostgreSQL の `ILIKE` のような専用の演算子を使わずに済み、生 SQL の断片が減る。
+
+文字コードは **`utf8mb4`**、照合順序は **`utf8mb4_0900_ai_ci`** で作成する。`utf8mb4` を使うのは、MySQL の `utf8` が 3 バイトまでしか扱えず**絵文字や一部の漢字が保存できない**ため。ローカルのコンテナと RDS の両方で明示的に指定し、日本語のメモ・カテゴリ名が化けないようにする（[N-15](./non-functional.md#入力と表現)）。Rails と JSON レスポンスは既定で UTF-8 のため、追加の設定は不要。
+
+接続には `mysql2` gem を使う（`rails new --database=mysql` で Gemfile に入る）。
 
 ### フロントエンド: Vue 3 + TypeScript + Vite
 
@@ -238,7 +245,7 @@ Ruby を初めて書くため、規約を人間が覚える前に RuboCop に指
 | `test` | `bundle exec rspec` | **追加**（`--skip-test` により生成されないため） |
 | `frontend` | ESLint / `prettier --check` / `vue-tsc --noEmit` / `npm audit` | **追加** |
 
-`test` ジョブの PostgreSQL 16 は Actions の `services:` で起動する。**ローカルの `docker-compose.yml` とは別の定義になる**点に注意する（同じイメージ・同じメジャーバージョンを指定して [N-37](./non-functional.md#開発プロセス品質) の環境差異を避ける）。
+`test` ジョブの MySQL 8.4 は Actions の `services:` で起動する。**ローカルの `docker-compose.yml` とは別の定義になる**点に注意する（同じイメージ・同じメジャーバージョンを指定して [N-37](./non-functional.md#開発プロセス品質) の環境差異を避ける）。
 
 4 つのジョブすべてを main のブランチ保護の**必須チェック**に指定することで、N-33 が仕組みとして成立する。
 
@@ -246,7 +253,7 @@ Ruby を初めて書くため、規約を人間が覚える前に RuboCop に指
 
 ### ローカル実行: Docker Compose
 
-PostgreSQL をコンテナで起動し、ローカルに DB を直接インストールせずに開発できる。起動手順は手順7で `start-servers` スキルとしてまとめる。
+MySQL をコンテナで起動し、ローカルに DB を直接インストールせずに開発できる。起動手順は手順7で `start-servers` スキルとしてまとめる。
 
 ### インフラ: Terraform + EC2 / RDS / S3
 
@@ -255,7 +262,7 @@ PostgreSQL をコンテナで起動し、ローカルに DB を直接インス�
 | S3（フロント用） | `vite build` の成果物を静的ウェブサイトとして配信 |
 | S3（tfstate用） | Terraform の state 保管。他リソースより先に bootstrap として作る |
 | EC2 | Rails API を Docker で実行。パブリックサブネットに配置 |
-| RDS（PostgreSQL） | データ永続化。プライベートサブネットに配置し、EC2 のセキュリティグループからのみ接続を許可 |
+| RDS（MySQL） | データ永続化。プライベートサブネットに配置し、EC2 のセキュリティグループからのみ接続を許可 |
 
 課題の指定。構成をコード化することで、`terraform destroy` による確実な後片付けができる（[non-functional.md の N-17](./non-functional.md#保守性運用)）。
 ECS や ALB は使わない。常時稼働・冗長化が要件外のため、単一 EC2 + Docker が最小構成として妥当。
@@ -327,14 +334,14 @@ Terraform 1.10 以降は S3 backend の `use_lockfile = true` でロックファ
 | --- | --- |
 | OS | Windows 11（開発）、Amazon Linux 2023（本番 EC2） |
 | 必要なツール | Ruby 3.3、Node.js 20 以上、Docker Desktop、Terraform 1.x、AWS CLI v2 |
-| ローカルのポート | フロント `5173`（Vite）、API `3000`（Rails）、DB `5432`（PostgreSQL） |
+| ローカルのポート | フロント `5173`（Vite）、API `3000`（Rails）、DB `3306`（MySQL） |
 | CORS | 開発時は Vite の proxy で `/api` を `3000` に転送し、CORS を発生させない。本番は S3 のドメインからの API 呼び出しになるため、`rack-cors` で許可オリジンを環境変数から設定する |
 
 Windows 上で Ruby を直接動かすと gem のビルドでつまずくことがあるため、Rails も Docker コンテナで動かす方針とする。
 
 #### docker-compose.yml の構成
 
-**`db`（PostgreSQL）と `api`（Rails）の 2 サービスとし、Vite はホストで `npm run dev` で動かす。** Vite もコンテナに入れれば起動コマンドが 1 つにまとまるが、Windows のバインドマウントはファイル変更のイベントが伝わらないため `usePolling` による定期走査が必須になり、保存してから画面に反映されるまでが遅くなる。Ruby と Vue を同時に学ぶ以上、フロントの試行錯誤の回数が多くなるため、ホットリロードの速さを優先した。
+**`db`（MySQL）と `api`（Rails）の 2 サービスとし、Vite はホストで `npm run dev` で動かす。** Vite もコンテナに入れれば起動コマンドが 1 つにまとまるが、Windows のバインドマウントはファイル変更のイベントが伝わらないため `usePolling` による定期走査が必須になり、保存してから画面に反映されるまでが遅くなる。Ruby と Vue を同時に学ぶ以上、フロントの試行錯誤の回数が多くなるため、ホットリロードの速さを優先した。
 
 起動は `docker compose up` と `npm run dev` の 2 コマンドになる。手順7 で用意する `start-servers` スキルで 1 コマンドにまとめる（[N-36](./non-functional.md#開発プロセス品質)）。
 

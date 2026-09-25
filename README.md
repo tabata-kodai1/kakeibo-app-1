@@ -21,7 +21,7 @@
 | --- | --- |
 | バックエンド | Ruby 3.3 / Ruby on Rails 8.1（APIモード） |
 | フロントエンド | TypeScript / Vue 3（Composition API）/ Vite |
-| データベース | PostgreSQL 16 |
+| データベース | MySQL 8.4 |
 | テスト | RSpec + FactoryBot（リクエストスペック） |
 | ローカル実行 | Docker Compose |
 | インフラ | Terraform + AWS（EC2 / RDS / S3） |
