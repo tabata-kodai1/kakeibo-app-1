@@ -40,14 +40,22 @@ else
   sort -u -o "$WORK/files" "$WORK/files"
 fi
 
-while IFS= read -r f; do
-  [ -z "$f" ] && continue
-  if echo "$f" | grep -Eq "$DOTTF"; then
-    hit "禁止パス(.terraform/)" "$f"
-  elif echo "$f" | grep -Eq "$FORBIDDEN" && ! echo "$f" | grep -Eq "$ALLOWED_TEMPLATE"; then
-    hit "禁止ファイル名" "$f"
-  fi
-done < "$WORK/files"
+# ファイル 1 件ごとに grep を起動すると、変更ファイルが多いときに遅くなる。awk 1 パスで判定する。
+# 正規表現は ENVIRON 経由で渡す（-v はバックスラッシュを解釈してしまい \. が壊れるため）。
+SG_DOTTF="$DOTTF" SG_FORBIDDEN="$FORBIDDEN" SG_TEMPLATE="$ALLOWED_TEMPLATE" \
+awk '
+  length($0) == 0 { next }
+  {
+    if ($0 ~ ENVIRON["SG_DOTTF"])
+      printf "NG  %-28s %s\n", "禁止パス(.terraform/)", $0
+    else if ($0 ~ ENVIRON["SG_FORBIDDEN"] && $0 !~ ENVIRON["SG_TEMPLATE"])
+      printf "NG  %-28s %s\n", "禁止ファイル名", $0
+  }
+' "$WORK/files" > "$WORK/files.out"
+if [ -s "$WORK/files.out" ]; then
+  cat "$WORK/files.out"
+  FOUND=1
+fi
 
 # --- 2. 追加された行の一覧（path:line:text）を作る -------------------------------
 if [ "$MODE" = staged ]; then
@@ -72,10 +80,10 @@ cat "$WORK/added" "$WORK/messages" > "$WORK/all"
 
 scan() { # 規則名 拡張正規表現 [-i]
   local name="$1" re="$2" flag="${3:-}"
+  # 一致行ごとに echo/cut を起動すると一致数が多いときに遅くなるため、awk 1 パスで整形する。
   # shellcheck disable=SC2086
-  grep -E $flag -e "$re" "$WORK/all" | while IFS= read -r l; do
-    printf 'NG  %-28s %s\n' "$name" "$(echo "$l" | cut -d: -f1,2)"
-  done
+  grep -E $flag -e "$re" "$WORK/all" \
+    | awk -F: -v n="$name" '{ printf "NG  %-28s %s:%s\n", n, $1, $2 }'
 }
 
 : > "$WORK/out"
@@ -91,26 +99,56 @@ scan() { # 規則名 拡張正規表現 [-i]
   # scheme://user:pass@host。書式例のプレースホルダー（password、xxx、changeme など）は除く
   grep -E -e '[a-z][a-z0-9+.-]*://[^/[:space:]:@]+:[^/[:space:]@$#{<]{4,}@' "$WORK/all" \
     | grep -Evi '://[^/:@]+:(password|passwd|pass|secret|xxx+|changeme|\*+|your[-_a-z]*)@' \
-    | while IFS= read -r l; do
-        printf 'NG  %-28s %s\n' "認証情報つきURL" "$(echo "$l" | cut -d: -f1,2)"
-      done
+    | awk -F: '{ printf "NG  %-28s %s:%s\n", "認証情報つきURL", $1, $2 }'
   scan "秘密っぽい代入"        '(password|passwd|secret|token|api_?key|master_?key)[a-z_]*[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"'$#{<]{8,}["'"'"']' -i
 } > "$WORK/out"
 
 # --- 3. 公開してはいけない IPv4（プライベート・予約・ドキュメント用は除く）-------
-grep -Eo '^[^:]+:[0-9]+:.*' "$WORK/all" | while IFS= read -r l; do
-  loc=$(echo "$l" | cut -d: -f1,2)
-  echo "$l" | cut -d: -f3- | grep -Eo '(^|[^0-9.])([0-9]{1,3}\.){3}[0-9]{1,3}([^0-9.]|$)' \
-    | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | while IFS= read -r ip; do
-      case "$ip" in
-        10.*|127.*|0.0.0.0|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*|169.254.*) continue ;;
-        192.0.2.*|198.51.100.*|203.0.113.*) continue ;; # ドキュメント用（RFC 5737）
-      esac
+# 1 行ごとに cut / grep / awk を起動すると、差分が大きいときに数千〜数万のプロセスが
+# 生成されて極端に遅くなる（特に Windows の Git Bash）。awk 1 プロセスの 1 パスで処理する。
+awk '
+  # path:line:text 形式の行だけを対象にする
+  /^[^:]+:[0-9]+:/ {
+    p1 = index($0, ":")
+    rest = substr($0, p1 + 1)
+    p2 = index(rest, ":")
+    if (p2 == 0) next
+    loc  = substr($0, 1, p1 + p2 - 1)
+    text = substr(rest, p2 + 1)
+
+    s = text
+    while (match(s, /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/)) {
+      ip     = substr(s, RSTART, RLENGTH)
+      before = (RSTART > 1) ? substr(s, RSTART - 1, 1) : ""
+      nxt    = RSTART + RLENGTH
+      after  = (nxt <= length(s)) ? substr(s, nxt, 1) : ""
+      s = substr(s, nxt)
+
+      # 前後が数字・ドットなら、より長い数値の一部であって IP ではない
+      if (before ~ /[0-9.]/ || after ~ /[0-9.]/) continue
+
       # 各オクテットが 0-255 でなければ IP ではない（バージョン番号など）
-      echo "$ip" | awk -F. '{ exit !($1<=255 && $2<=255 && $3<=255 && $4<=255) }' || continue
-      printf 'NG  %-28s %s\n' "公開IPv4?" "$loc"
-    done
-done >> "$WORK/out"
+      if (split(ip, o, ".") != 4) continue
+      skip = 0
+      for (i = 1; i <= 4; i++) if (length(o[i]) > 3 || o[i] + 0 > 255) { skip = 1; break }
+      if (skip) continue
+
+      a = o[1] + 0; b = o[2] + 0; c = o[3] + 0
+      # プライベート・予約
+      if (a == 10 || a == 127) continue
+      if (ip == "0.0.0.0") continue
+      if (a == 192 && b == 168) continue
+      if (a == 172 && b >= 16 && b <= 31) continue
+      if (a == 169 && b == 254) continue
+      # ドキュメント用（RFC 5737）
+      if (a == 192 && b == 0  && c == 2)   continue
+      if (a == 198 && b == 51 && c == 100) continue
+      if (a == 203 && b == 0  && c == 113) continue
+
+      printf "NG  %-28s %s\n", "公開IPv4?", loc
+    }
+  }
+' "$WORK/all" >> "$WORK/out"
 
 # --- 4. この環境の実際の値との一致（一番確実な検査）-------------------------------
 # Git 管理外（.gitignore 済み）の設定ファイルに書いてある値が、差分に混ざっていないか。
@@ -133,9 +171,8 @@ fi
 # 短い値（true、短い語など）は誤検出のもとなので 8 文字未満は捨てる
 awk 'length($0) >= 8' "$WORK/known" | tr -d '\r' | sort -u > "$WORK/known.f"
 if [ -s "$WORK/known.f" ]; then
-  grep -F -f "$WORK/known.f" "$WORK/all" | while IFS= read -r l; do
-    printf 'NG  %-28s %s\n' "この環境の実際の値と一致" "$(echo "$l" | cut -d: -f1,2)"
-  done >> "$WORK/out"
+  grep -F -f "$WORK/known.f" "$WORK/all" \
+    | awk -F: '{ printf "NG  %-28s %s:%s\n", "この環境の実際の値と一致", $1, $2 }' >> "$WORK/out"
 fi
 
 sort -u "$WORK/out" | grep '^NG' && FOUND=1
