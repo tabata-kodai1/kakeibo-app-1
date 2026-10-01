@@ -6,6 +6,24 @@
 
 初級者最終課題として、要件定義からデプロイまでの一連の開発プロセスを実践した。設計・実装・AWS へのデプロイまで完了している。
 
+## 操作デモ
+
+### 予算を決めて、残額を確認する
+
+https://github.com/user-attachments/assets/3986dfcb-b635-4dee-bd7b-b54d3962b6fa
+
+### 支出を記録する
+
+https://github.com/user-attachments/assets/37cde5dc-b7ff-4739-86af-95dccb1cccc2
+
+### 残額を超えて使うと、マイナスと警告色になる
+
+https://github.com/user-attachments/assets/ba072377-3b11-488e-9c4e-ab55ff5aa695
+
+### 明細を選んで、まとめて削除する
+
+https://github.com/user-attachments/assets/69fef80e-d9bd-4550-98e5-9a0b16d56468
+
 ## 想定する使い方
 
 ```
