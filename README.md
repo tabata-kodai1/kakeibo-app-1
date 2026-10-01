@@ -1,25 +1,3 @@
-
-
-https://github.com/user-attachments/assets/6e1ae19a-a03e-4527-b18c-c1856942a45e
-
-
-
-https://github.com/user-attachments/assets/fa9354d2-2519-4d02-9e0a-6ba7934ad015
-
-
-
-https://github.com/user-attachments/assets/a88941f9-3570-45fe-9c97-cf038e106c99
-
-
-
-https://github.com/user-attachments/assets/80168890-ff5a-4284-8dee-18ff0dc18b9f
-
-
-
-
-
-
-
 # kakeibo-app-1
 
 **決めた予算の範囲内で生活できているかを、一目で把握できる家計簿アプリ。**
@@ -27,6 +5,24 @@ https://github.com/user-attachments/assets/80168890-ff5a-4284-8dee-18ff0dc18b9f
 記録を溜めることが目的ではなく、「**あといくら使えるか**」に答えることを中心に据えている。月の予算を決め、支払いを記録し、残額を見る。画面で最も大きく表示されるのは残額。
 
 初級者最終課題として、要件定義からデプロイまでの一連の開発プロセスを実践した。設計・実装・AWS へのデプロイまで完了している。
+
+## 操作デモ
+
+### 予算を決めて、残額を確認する
+
+https://github.com/user-attachments/assets/3986dfcb-b635-4dee-bd7b-b54d3962b6fa
+
+### 支出を記録する
+
+https://github.com/user-attachments/assets/37cde5dc-b7ff-4739-86af-95dccb1cccc2
+
+### 残額を超えて使うと、マイナスと警告色になる
+
+https://github.com/user-attachments/assets/ba072377-3b11-488e-9c4e-ab55ff5aa695
+
+### 明細を選んで、まとめて削除する
+
+https://github.com/user-attachments/assets/69fef80e-d9bd-4550-98e5-9a0b16d56468
 
 ## 想定する使い方
 
